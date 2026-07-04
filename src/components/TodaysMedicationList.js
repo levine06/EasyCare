@@ -126,17 +126,17 @@ function MedRow({ med, busy, onToggle, onOpen }) {
           <Text style={styles.meta} maxFontSizeMultiplier={MAX_FONT_MULT}>
             {formatTime12h(med.reminder_time)} · {med.dosage}
           </Text>
-        </View>
-        {med.missed && (
-          <View style={styles.missedRow}>
-            <View style={styles.missedIconCircle}>
-              <Ionicons name="alert" size={13} color={colors.warning} />
+          {med.missed && (
+            <View style={styles.missedBadge}>
+              <View style={styles.missedIconCircle}>
+                <Ionicons name="alert" size={13} color={colors.warning} />
+              </View>
+              <Text style={styles.missedText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Missed
+              </Text>
             </View>
-            <Text style={styles.missedText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              Missed
-            </Text>
-          </View>
-        )}
+          )}
+        </View>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -181,9 +181,9 @@ const styles = StyleSheet.create({
   rowMain: { flex: 1, gap: spacing.xs, marginRight: spacing.md },
   name: { ...typography.body, fontWeight: '700' },
   nameTaken: { color: colors.textSecondary, textDecorationLine: 'line-through' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
   meta: { ...typography.small },
-  missedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
+  missedBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: spacing.xs },
   missedIconCircle: {
     width: 20,
     height: 20,
