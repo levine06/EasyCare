@@ -99,11 +99,13 @@ export default function AddMedicationScreen({ navigation, route }) {
     try {
       if (isEdit) {
         await updateMedication(medicationId, fields);
+        await resyncAllReminders();
+        navigation.goBack();
       } else {
         await addMedication(fields);
+        await resyncAllReminders();
+        navigation.navigate('Tabs', { screen: 'Home' });
       }
-      await resyncAllReminders();
-      navigation.goBack();
     } catch (e) {
       Alert.alert('Error', 'Could not save. Please try again.');
       setSaving(false);

@@ -39,6 +39,7 @@ export default function AddMealScreen({ navigation, route }) {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoUploadFailed, setPhotoUploadFailed] = useState(false);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -61,6 +62,24 @@ export default function AddMealScreen({ navigation, route }) {
     };
   }, [isEdit, mealId]);
 
+  // Uploads a local photo URI and returns the public URL, tracking the loading/
+  // failure state shown in the preview. Used both right after picking and again as
+  // a retry from Save, in case the first attempt failed (e.g. transient network).
+  const uploadPhoto = async (localUri) => {
+    setUploadingPhoto(true);
+    setPhotoUploadFailed(false);
+    try {
+      const url = await uploadMealPhoto(localUri);
+      setPhotoUrl(url);
+      return url;
+    } catch (e) {
+      setPhotoUploadFailed(true);
+      return null;
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handlePickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -75,18 +94,12 @@ export default function AddMealScreen({ navigation, route }) {
     });
     if (result.canceled || !result.assets?.length) return;
 
+    // Show the picked photo immediately — it stays visible even if the upload
+    // below fails, so the user never sees their selection disappear.
     const localUri = result.assets[0].uri;
     setLocalPhotoUri(localUri);
-    setUploadingPhoto(true);
-    try {
-      const url = await uploadMealPhoto(localUri);
-      setPhotoUrl(url);
-    } catch (e) {
-      Alert.alert('Upload failed', 'Could not upload the photo. Please try again.');
-      setLocalPhotoUri(null);
-    } finally {
-      setUploadingPhoto(false);
-    }
+    setPhotoUrl(null);
+    await uploadPhoto(localUri);
   };
 
   const handleSave = async () => {
@@ -95,20 +108,36 @@ export default function AddMealScreen({ navigation, route }) {
       return;
     }
 
+    setSaving(true);
+
+    // If a photo was picked but never finished uploading, retry once before saving.
+    let finalPhotoUrl = photoUrl;
+    if (localPhotoUri && !finalPhotoUrl) {
+      finalPhotoUrl = await uploadPhoto(localPhotoUri);
+      if (!finalPhotoUrl) {
+        Alert.alert(
+          'Photo upload failed',
+          'The photo could not be uploaded. Please check your connection and try again.'
+        );
+        setSaving(false);
+        return;
+      }
+    }
+
     const fields = {
       meal_type: mealType,
-      photo_url: photoUrl,
+      photo_url: finalPhotoUrl,
       food_tags: tags,
     };
 
-    setSaving(true);
     try {
       if (isEdit) {
         await updateMeal(mealId, fields);
+        navigation.goBack();
       } else {
         await addMeal(fields);
+        navigation.navigate('Tabs', { screen: 'Home' });
       }
-      navigation.goBack();
     } catch (e) {
       Alert.alert('Error', 'Could not save. Please try again.');
       setSaving(false);
@@ -156,11 +185,22 @@ export default function AddMealScreen({ navigation, route }) {
 
           <Text style={styles.label}>Upload photo</Text>
           {previewUri ? (
-            <TouchableOpacity onPress={handlePickPhoto} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={
+                photoUploadFailed ? () => uploadPhoto(localPhotoUri) : handlePickPhoto
+              }
+              activeOpacity={0.8}
+            >
               <Image source={{ uri: previewUri }} style={styles.photoPreview} />
               {uploadingPhoto && (
                 <View style={styles.photoOverlay}>
                   <ActivityIndicator color={colors.white} />
+                </View>
+              )}
+              {photoUploadFailed && !uploadingPhoto && (
+                <View style={styles.photoOverlay}>
+                  <Ionicons name="refresh" size={28} color={colors.white} />
+                  <Text style={styles.photoRetryText}>Upload failed — tap to retry</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -233,11 +273,13 @@ const styles = StyleSheet.create({
   },
   photoOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
   },
+  photoRetryText: { color: colors.white, fontWeight: '600', fontSize: 15 },
   saveBtn: {
     minHeight: MIN_TOUCH + 4,
     backgroundColor: colors.primary,
