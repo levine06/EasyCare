@@ -15,12 +15,14 @@ import {
   markTaken,
   unmarkTaken,
 } from '../api/medications';
-import { formatTime12h } from '../utils/medicationFormat';
+import { formatTime12h, reminderTimeOnDate } from '../utils/medicationFormat';
 import { colors, spacing, radius, typography, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
-// Home-page "Today's Medication" card. Shows two-line rows (name, then time ·
-// dosage) with a checkbox; taken items sort to the bottom. Only 3 shown until
-// "View more". Tapping a row (outside the checkbox) opens the edit screen.
+// Home-page "Today's Medication" card. Untaken medications show first (up to 3);
+// taken ones are always tucked behind "View more", even if fewer than 3 are shown,
+// so the default view stays focused on what's still left to do today. Missed doses
+// (due time passed, not taken) get a red "Missed" badge. Tapping a row (outside the
+// checkbox) opens the edit screen.
 export default function TodaysMedicationList() {
   const navigation = useNavigation();
   const [meds, setMeds] = useState([]);
@@ -31,7 +33,7 @@ export default function TodaysMedicationList() {
   const load = useCallback(async () => {
     try {
       const data = await getTodaysMedications();
-      setMeds(sortForDisplay(data));
+      setMeds(annotateAndSort(data));
     } catch (e) {
       setMeds([]);
     } finally {
@@ -61,7 +63,10 @@ export default function TodaysMedicationList() {
     }
   };
 
-  const visible = expanded ? meds : meds.slice(0, 3);
+  const untaken = meds.filter((m) => !m.taken);
+  const taken = meds.filter((m) => m.taken);
+  const hasHidden = untaken.length > 3 || taken.length > 0;
+  const visible = expanded ? [...untaken, ...taken] : untaken.slice(0, 3);
 
   return (
     <SectionCard
@@ -75,6 +80,9 @@ export default function TodaysMedicationList() {
         <EmptyState icon="checkmark-circle-outline" message="Nothing scheduled for today" />
       ) : (
         <>
+          {visible.length === 0 && (
+            <EmptyState icon="checkmark-circle-outline" message="All medications taken for today" />
+          )}
           {visible.map((med) => (
             <MedRow
               key={med.id}
@@ -86,7 +94,7 @@ export default function TodaysMedicationList() {
               }
             />
           ))}
-          {meds.length > 3 && (
+          {hasHidden && (
             <TouchableOpacity
               style={styles.viewMore}
               onPress={() => setExpanded((v) => !v)}
@@ -119,6 +127,16 @@ function MedRow({ med, busy, onToggle, onOpen }) {
             {formatTime12h(med.reminder_time)} · {med.dosage}
           </Text>
         </View>
+        {med.missed && (
+          <View style={styles.missedRow}>
+            <View style={styles.missedIconCircle}>
+              <Ionicons name="alert" size={13} color={colors.warning} />
+            </View>
+            <Text style={styles.missedText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              Missed
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -136,9 +154,15 @@ function MedRow({ med, busy, onToggle, onOpen }) {
   );
 }
 
-// Untaken first (by reminder time), taken sink to the bottom.
-function sortForDisplay(meds) {
-  return [...meds].sort((a, b) => {
+// Adds a `missed` flag (due time passed, not taken) to each medication, then sorts
+// untaken-first by reminder time, taken sunk to the bottom.
+function annotateAndSort(meds) {
+  const now = new Date();
+  const annotated = meds.map((m) => ({
+    ...m,
+    missed: !m.taken && Boolean(m.reminder_time) && reminderTimeOnDate(m.reminder_time) < now,
+  }));
+  return annotated.sort((a, b) => {
     if (a.taken !== b.taken) return a.taken ? 1 : -1;
     return (a.reminder_time || '').localeCompare(b.reminder_time || '');
   });
@@ -159,6 +183,16 @@ const styles = StyleSheet.create({
   nameTaken: { color: colors.textSecondary, textDecorationLine: 'line-through' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   meta: { ...typography.small },
+  missedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
+  missedIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.pill,
+    backgroundColor: colors.warningBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  missedText: { fontSize: 14, fontWeight: '700', color: colors.warning },
   checkbox: {
     width: 34,
     height: 34,
