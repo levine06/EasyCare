@@ -1,0 +1,171 @@
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import ScreenHeader from '../components/ScreenHeader';
+import MedicationCard from '../components/MedicationCard';
+import { listMedications, deactivateMedication } from '../api/medications';
+import { resyncAllReminders } from '../notifications/reminders';
+import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
+
+// Logs screen with a Food | Medication segmented toggle. The Food tab is a stub for
+// Person 1; the Medication tab is fully implemented here.
+export default function LogsScreen({ navigation }) {
+  const [tab, setTab] = useState('Medication');
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScreenHeader title="Logs" />
+      <View style={styles.toggle}>
+        <ToggleButton
+          label="Food"
+          icon="restaurant"
+          active={tab === 'Food'}
+          onPress={() => setTab('Food')}
+        />
+        <ToggleButton
+          label="Medication"
+          icon="medkit"
+          active={tab === 'Medication'}
+          onPress={() => setTab('Medication')}
+        />
+      </View>
+
+      {tab === 'Food' ? <FoodTabStub /> : <MedicationTab navigation={navigation} />}
+    </SafeAreaView>
+  );
+}
+
+function ToggleButton({ label, icon, active, onPress }) {
+  return (
+    <TouchableOpacity
+      style={[styles.toggleBtn, active && styles.toggleBtnActive]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+    >
+      <Ionicons name={icon} size={18} color={active ? colors.white : colors.textSecondary} />
+      <Text style={[styles.toggleText, active && styles.toggleTextActive]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function FoodTabStub() {
+  return (
+    <View style={styles.center}>
+      <Text style={styles.stubText}>Food logs — Person 1</Text>
+    </View>
+  );
+}
+
+function MedicationTab({ navigation }) {
+  const [meds, setMeds] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await listMedications();
+      setMeds(data);
+    } catch (e) {
+      Alert.alert('Error', 'Could not load medications.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Reload whenever the Logs tab regains focus (e.g. after add/edit/delete).
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const handleDelete = (med) => {
+    Alert.alert(
+      'Delete medication',
+      `Remove "${med.name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deactivateMedication(med.id);
+              await resyncAllReminders();
+              load();
+            } catch (e) {
+              Alert.alert('Error', 'Could not delete. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: spacing.xxl }} color={colors.primary} />;
+  }
+
+  if (meds.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.stubText}>No medications yet. Tap + to add one.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={meds}
+      keyExtractor={(item) => String(item.id)}
+      contentContainerStyle={styles.list}
+      ListHeaderComponent={<Text style={styles.listHeader}>All medication logs</Text>}
+      renderItem={({ item }) => (
+        <MedicationCard
+          medication={item}
+          onEdit={(med) => navigation.navigate('AddMedication', { medicationId: med.id })}
+          onDelete={handleDelete}
+        />
+      )}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  toggle: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+    gap: spacing.xs,
+  },
+  toggleBtn: {
+    flex: 1,
+    minHeight: MIN_TOUCH,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.sm,
+  },
+  toggleBtnActive: { backgroundColor: colors.primary },
+  toggleText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
+  toggleTextActive: { color: colors.white },
+  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  listHeader: { ...typography.bodySecondary, marginBottom: spacing.xs },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  stubText: { ...typography.bodySecondary, textAlign: 'center' },
+});
