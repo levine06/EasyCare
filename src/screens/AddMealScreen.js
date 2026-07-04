@@ -107,6 +107,10 @@ export default function AddMealScreen({ navigation, route }) {
       Alert.alert('Please wait', 'The photo is still uploading.');
       return;
     }
+    if (tags.length === 0) {
+      Alert.alert('Missing food tags', 'Please select at least one food tag.');
+      return;
+    }
 
     setSaving(true);
 
