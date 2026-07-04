@@ -14,15 +14,23 @@ import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import MedicationCard from '../components/MedicationCard';
 import MealCard from '../components/MealCard';
+import EmptyState from '../components/EmptyState';
 import { listMedications, deactivateMedication } from '../api/medications';
 import { listMeals, deleteMeal } from '../api/meals';
 import { resyncAllReminders } from '../notifications/reminders';
-import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
+import { colors, spacing, radius, typography, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
 // Logs screen with a Food | Medication segmented toggle. Both tabs are fully
-// implemented: Food (meals) and Medication.
-export default function LogsScreen({ navigation }) {
-  const [tab, setTab] = useState('Food');
+// implemented: Food (meals) and Medication. Accepts an optional route param
+// `tab` ("Food" | "Medication") so Home's section chevrons can deep-link here.
+export default function LogsScreen({ navigation, route }) {
+  const [tab, setTab] = useState(route.params?.tab ?? 'Food');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.tab) setTab(route.params.tab);
+    }, [route.params?.tab])
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -60,7 +68,12 @@ function ToggleButton({ label, icon, active, onPress }) {
       accessibilityState={{ selected: active }}
     >
       <Ionicons name={icon} size={18} color={active ? colors.white : colors.textSecondary} />
-      <Text style={[styles.toggleText, active && styles.toggleTextActive]}>{label}</Text>
+      <Text
+        style={[styles.toggleText, active && styles.toggleTextActive]}
+        maxFontSizeMultiplier={MAX_FONT_MULT}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -111,9 +124,11 @@ function FoodTab({ navigation }) {
 
   if (meals.length === 0) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.stubText}>No meals logged yet. Tap + to log one.</Text>
-      </View>
+      <EmptyState
+        icon="restaurant-outline"
+        message="No meals logged yet"
+        hint="Tap the + button to log your first meal."
+      />
     );
   }
 
@@ -184,9 +199,11 @@ function MedicationTab({ navigation }) {
 
   if (meds.length === 0) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.stubText}>No medications yet. Tap + to add one.</Text>
-      </View>
+      <EmptyState
+        icon="medkit-outline"
+        message="No medications yet"
+        hint="Tap the + button to add your first medication."
+      />
     );
   }
 
@@ -232,6 +249,4 @@ const styles = StyleSheet.create({
   toggleTextActive: { color: colors.white },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   listHeader: { ...typography.bodySecondary, marginBottom: spacing.xs },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  stubText: { ...typography.bodySecondary, textAlign: 'center' },
 });

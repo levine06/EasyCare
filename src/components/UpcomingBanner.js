@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNextUpcoming } from '../api/medications';
 import { formatTime12h } from '../utils/medicationFormat';
-import { colors, spacing, typography } from '../theme';
+import { colors, spacing, MAX_FONT_MULT } from '../theme';
 
 // "Upcoming:" headline for the home page — next due, untaken medication today.
 // Exported for Person 3's dashboard; safe to render standalone.
@@ -23,21 +23,21 @@ export default function UpcomingBanner() {
   );
 
   return (
-    <Text style={styles.text}>
-      Upcoming:{'\n'}
-      {next
-        ? `${next.name} at ${formatTime12h(next.reminder_time)}.`
-        : 'No more medications due today.'}
-    </Text>
+    <View style={styles.wrap}>
+      <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+        Upcoming
+      </Text>
+      <Text style={styles.message} maxFontSizeMultiplier={MAX_FONT_MULT}>
+        {next
+          ? `${next.name} at ${formatTime12h(next.reminder_time)}.`
+          : 'No more medications due today.'}
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  text: {
-    ...typography.title,
-    fontSize: 26,
-    lineHeight: 32,
-    marginBottom: spacing.sm,
-    color: colors.primary,
-  },
+  wrap: { paddingVertical: spacing.sm, gap: spacing.xs },
+  label: { fontSize: 20, fontWeight: '600', color: colors.primaryDark },
+  message: { fontSize: 26, fontWeight: '700', lineHeight: 34, color: colors.primary },
 });

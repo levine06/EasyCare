@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
@@ -22,7 +24,7 @@ import {
 } from '../api/medications';
 import { resyncAllReminders } from '../notifications/reminders';
 import { daysToFrequency, frequencyToDays } from '../utils/medicationFormat';
-import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
+import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
 const DOSAGE_NUMBERS = ['1', '2', '3', '4', '5', '6', '8', '10', '500', '1000'];
 const DOSAGE_UNITS = [
@@ -149,76 +151,97 @@ export default function AddMedicationScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenHeader title={isEdit ? 'Edit medication' : 'Add a medication'} showBack />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter medication name"
-            placeholderTextColor={colors.textSecondary}
-          />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.card}>
+            <Text style={[styles.label, styles.firstLabel]} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              Title
+            </Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter medication name"
+              placeholderTextColor={colors.textSecondary}
+              maxFontSizeMultiplier={MAX_FONT_MULT}
+            />
 
-          <Text style={styles.label}>Dosage</Text>
-          <View style={styles.dosageRow}>
-            <DropdownSelect
-              style={styles.dosageCol}
-              value={dosageNumber}
-              options={DOSAGE_NUMBERS}
-              onChange={setDosageNumber}
-            />
-            <DropdownSelect
-              style={styles.dosageCol}
-              value={dosageUnit}
-              options={DOSAGE_UNITS}
-              onChange={setDosageUnit}
-            />
+            <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              Dosage
+            </Text>
+            <View style={styles.dosageRow}>
+              <DropdownSelect
+                style={styles.dosageCol}
+                value={dosageNumber}
+                options={DOSAGE_NUMBERS}
+                onChange={setDosageNumber}
+                title="Amount"
+              />
+              <DropdownSelect
+                style={styles.dosageCol}
+                value={dosageUnit}
+                options={DOSAGE_UNITS}
+                onChange={setDosageUnit}
+                title="Unit"
+              />
+            </View>
+
+            <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              Time
+            </Text>
+            <TimeWheelPicker value={time} onChange={setTime} />
+
+            <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              Frequency
+            </Text>
+            <DayOfWeekSelector value={days} onChange={setDays} />
           </View>
 
-          <Text style={styles.label}>Time</Text>
-          <TimeWheelPicker value={time} onChange={setTime} />
-
-          <Text style={styles.label}>Frequency</Text>
-          <DayOfWeekSelector value={days} onChange={setDays} />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveBtn, saving && styles.btnDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-          accessibilityRole="button"
-        >
-          <Text style={styles.saveBtnText}>
-            {isEdit ? 'Save changes' : 'Add medication'}
-          </Text>
-        </TouchableOpacity>
-
-        {isEdit && (
           <TouchableOpacity
-            style={[styles.deleteBtn, saving && styles.btnDisabled]}
-            onPress={handleDelete}
+            style={[styles.saveBtn, saving && styles.btnDisabled]}
+            onPress={handleSave}
             disabled={saving}
             accessibilityRole="button"
           >
-            <Text style={styles.deleteBtnText}>Delete medication</Text>
+            <Text style={styles.saveBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              {isEdit ? 'Save changes' : 'Add medication'}
+            </Text>
           </TouchableOpacity>
-        )}
-      </ScrollView>
+
+          {isEdit && (
+            <TouchableOpacity
+              style={[styles.deleteBtn, saving && styles.btnDisabled]}
+              onPress={handleDelete}
+              disabled={saving}
+              accessibilityRole="button"
+            >
+              <Text style={styles.deleteBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Delete medication
+              </Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.lg,
-    gap: spacing.sm,
+    gap: spacing.md,
+    ...cardShadow,
   },
-  label: { ...typography.sectionLabel, marginTop: spacing.sm },
+  label: { ...typography.sectionLabel, marginTop: spacing.md },
+  firstLabel: { marginTop: 0 },
   input: {
     minHeight: MIN_TOUCH,
     borderWidth: 1,
@@ -230,7 +253,7 @@ const styles = StyleSheet.create({
   dosageRow: { flexDirection: 'row', gap: spacing.md },
   dosageCol: { flex: 1 },
   saveBtn: {
-    minHeight: MIN_TOUCH + 4,
+    minHeight: 56,
     backgroundColor: colors.primary,
     borderRadius: radius.md,
     alignItems: 'center',
@@ -238,7 +261,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: { color: colors.white, fontSize: 18, fontWeight: '700' },
   deleteBtn: {
-    minHeight: MIN_TOUCH,
+    minHeight: 52,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',

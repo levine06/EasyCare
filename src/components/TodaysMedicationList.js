@@ -8,17 +8,19 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import SectionCard from './SectionCard';
+import EmptyState from './EmptyState';
 import {
   getTodaysMedications,
   markTaken,
   unmarkTaken,
 } from '../api/medications';
 import { formatTime12h } from '../utils/medicationFormat';
-import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
+import { colors, spacing, radius, typography, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
-// Home-page "Today's Medication" card. Shows time · name · dosage · checkbox rows;
-// taken items sort to the bottom; only 3 shown until "View more". Tapping a row
-// (outside the checkbox) opens the edit screen. Exported for Person 3's dashboard.
+// Home-page "Today's Medication" card. Shows two-line rows (name, then time ·
+// dosage) with a checkbox; taken items sort to the bottom. Only 3 shown until
+// "View more". Tapping a row (outside the checkbox) opens the edit screen.
 export default function TodaysMedicationList() {
   const navigation = useNavigation();
   const [meds, setMeds] = useState([]);
@@ -62,16 +64,15 @@ export default function TodaysMedicationList() {
   const visible = expanded ? meds : meds.slice(0, 3);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <Ionicons name="medkit" size={18} color={colors.white} />
-        <Text style={styles.headerText}>Today's Medication</Text>
-      </View>
-
+    <SectionCard
+      icon="medkit"
+      title="Today's Medication"
+      onPressChevron={() => navigation.navigate('Tabs', { screen: 'Logs', params: { tab: 'Medication' } })}
+    >
       {loading ? (
         <ActivityIndicator style={{ padding: spacing.lg }} color={colors.primary} />
       ) : meds.length === 0 ? (
-        <Text style={styles.empty}>Nothing scheduled for today.</Text>
+        <EmptyState icon="checkmark-circle-outline" message="Nothing scheduled for today" />
       ) : (
         <>
           {visible.map((med) => (
@@ -90,14 +91,14 @@ export default function TodaysMedicationList() {
               style={styles.viewMore}
               onPress={() => setExpanded((v) => !v)}
             >
-              <Text style={styles.viewMoreText}>
+              <Text style={styles.viewMoreText} maxFontSizeMultiplier={MAX_FONT_MULT}>
                 {expanded ? 'View less' : 'View more'}
               </Text>
             </TouchableOpacity>
           )}
         </>
       )}
-    </View>
+    </SectionCard>
   );
 }
 
@@ -105,14 +106,19 @@ function MedRow({ med, busy, onToggle, onOpen }) {
   return (
     <View style={styles.row}>
       <TouchableOpacity style={styles.rowMain} onPress={onOpen} activeOpacity={0.7}>
-        <View style={styles.timeCol}>
-          <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.time}>{formatTime12h(med.reminder_time)}</Text>
-        </View>
-        <Text style={[styles.name, med.taken && styles.nameTaken]} numberOfLines={1}>
+        <Text
+          style={[styles.name, med.taken && styles.nameTaken]}
+          numberOfLines={2}
+          maxFontSizeMultiplier={MAX_FONT_MULT}
+        >
           {med.name}
         </Text>
-        <Text style={styles.dosage}>{med.dosage}</Text>
+        <View style={styles.metaRow}>
+          <Ionicons name="time-outline" size={15} color={colors.textSecondary} />
+          <Text style={styles.meta} maxFontSizeMultiplier={MAX_FONT_MULT}>
+            {formatTime12h(med.reminder_time)} · {med.dosage}
+          </Text>
+        </View>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -124,7 +130,7 @@ function MedRow({ med, busy, onToggle, onOpen }) {
         accessibilityLabel={`Mark ${med.name} as taken`}
         hitSlop={8}
       >
-        {med.taken && <Ionicons name="checkmark" size={18} color={colors.white} />}
+        {med.taken && <Ionicons name="checkmark" size={22} color={colors.white} />}
       </TouchableOpacity>
     </View>
   );
@@ -139,47 +145,30 @@ function sortForDisplay(meds) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerText: { color: colors.white, fontSize: 16, fontWeight: '700' },
-  empty: { ...typography.bodySecondary, padding: spacing.lg },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    minHeight: MIN_TOUCH + 4,
+    minHeight: MIN_TOUCH + 12,
   },
-  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  timeCol: { flexDirection: 'row', alignItems: 'center', gap: 2, width: 78 },
-  time: { ...typography.bodySecondary, fontSize: 14 },
-  name: { ...typography.body, flex: 1, fontWeight: '600' },
+  rowMain: { flex: 1, gap: spacing.xs, marginRight: spacing.md },
+  name: { ...typography.body, fontWeight: '700' },
   nameTaken: { color: colors.textSecondary, textDecorationLine: 'line-through' },
-  dosage: { ...typography.small },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  meta: { ...typography.small },
   checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.sm,
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm + 2,
     borderWidth: 2,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing.md,
   },
   checkboxChecked: { backgroundColor: colors.success, borderColor: colors.success },
   viewMore: { alignItems: 'center', paddingVertical: spacing.md },
-  viewMoreText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  viewMoreText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
 });

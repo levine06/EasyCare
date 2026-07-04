@@ -46,7 +46,7 @@ function Tabs() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: { fontSize: 12 },
+        tabBarLabelStyle: styles.tabBarLabel,
       }}
     >
       <Tab.Screen
@@ -108,12 +108,11 @@ export default function App() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: 64,
-    paddingBottom: 8,
     paddingTop: 8,
     backgroundColor: colors.card,
     borderTopColor: colors.border,
   },
+  tabBarLabel: { fontSize: 13, fontWeight: '600' },
   addButtonWrap: {
     top: -18,
     justifyContent: 'center',
@@ -127,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,

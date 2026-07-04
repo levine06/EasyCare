@@ -39,15 +39,31 @@ export const radius = {
   pill: 999,
 };
 
-// Large, high-contrast type scale for accessibility.
+// Large, high-contrast type scale for accessibility. Nothing a user needs to read
+// as real content should go below 15pt — `caption` (14pt) is reserved for the one
+// or two truly incidental strings (e.g. an "Added on" date) that aren't primary info.
 export const typography = {
   title: { fontSize: 30, fontWeight: '700', color: colors.primary },
   heading: { fontSize: 22, fontWeight: '700', color: colors.text },
   sectionLabel: { fontSize: 17, fontWeight: '600', color: colors.text },
   body: { fontSize: 17, color: colors.text },
   bodySecondary: { fontSize: 15, color: colors.textSecondary },
-  small: { fontSize: 13, color: colors.textSecondary },
+  small: { fontSize: 15, color: colors.textSecondary },
+  caption: { fontSize: 14, color: colors.textSecondary },
+};
+
+// Soft elevation for cards, matching the depth shown in the design mockups.
+export const cardShadow = {
+  shadowColor: '#000',
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 2 },
+  elevation: 2,
 };
 
 // Minimum touch target for buttons/rows (accessibility guideline).
 export const MIN_TOUCH = 48;
+
+// Cap OS-level font scaling so accessibility text sizes don't blow up layouts,
+// while still respecting a user's larger system text size preference.
+export const MAX_FONT_MULT = 1.4;

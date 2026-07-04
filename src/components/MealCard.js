@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  Pressable,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
+import ActionSheetMenu from './ActionSheetMenu';
+import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 import { formatRelativeTime } from '../utils/mealFormat';
 
 // Logs-tab card: photo, title (meal type), relative time, food tags, and a 3-dot
@@ -24,15 +17,19 @@ export default function MealCard({ meal, onEdit, onDelete }) {
         <Image source={{ uri: meal.photo_url }} style={styles.photo} />
       ) : (
         <View style={[styles.photo, styles.photoPlaceholder]}>
-          <Ionicons name="restaurant-outline" size={22} color={colors.textSecondary} />
+          <Ionicons name="restaurant-outline" size={26} color={colors.textSecondary} />
         </View>
       )}
 
       <View style={styles.info}>
         <View style={styles.titleRow}>
           <View style={styles.titleCol}>
-            <Text style={styles.title}>{meal.meal_type}</Text>
-            <Text style={styles.time}>{formatRelativeTime(meal.created_at)}</Text>
+            <Text style={styles.title} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              {meal.meal_type}
+            </Text>
+            <Text style={styles.time} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              {formatRelativeTime(meal.created_at)}
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.menuBtn}
@@ -41,7 +38,7 @@ export default function MealCard({ meal, onEdit, onDelete }) {
             accessibilityLabel="More options"
             hitSlop={8}
           >
-            <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+            <Ionicons name="ellipsis-vertical" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -49,39 +46,21 @@ export default function MealCard({ meal, onEdit, onDelete }) {
           <View style={styles.tagRow}>
             {tags.map((tag) => (
               <View key={tag} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
+                <Text style={styles.tagText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                  {tag}
+                </Text>
               </View>
             ))}
           </View>
         )}
       </View>
 
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <View style={styles.menu}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuOpen(false);
-                onEdit?.(meal);
-              }}
-            >
-              <Ionicons name="create-outline" size={20} color={colors.text} />
-              <Text style={styles.menuText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuOpen(false);
-                onDelete?.(meal);
-              }}
-            >
-              <Ionicons name="trash-outline" size={20} color={colors.warning} />
-              <Text style={[styles.menuText, { color: colors.warning }]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+      <ActionSheetMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onEdit={() => onEdit?.(meal)}
+        onDelete={() => onDelete?.(meal)}
+      />
     </View>
   );
 }
@@ -89,48 +68,33 @@ export default function MealCard({ meal, onEdit, onDelete }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     padding: spacing.md,
     flexDirection: 'row',
     gap: spacing.md,
+    ...cardShadow,
   },
-  photo: { width: 64, height: 64, borderRadius: radius.sm, backgroundColor: colors.border },
+  photo: { width: 80, height: 80, borderRadius: radius.md, backgroundColor: colors.border },
   photoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  info: { flex: 1, gap: spacing.xs },
+  info: { flex: 1, gap: spacing.sm, justifyContent: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   titleCol: { flex: 1 },
-  title: { ...typography.sectionLabel, fontSize: 17, fontWeight: '700' },
+  title: { ...typography.sectionLabel, fontSize: 18, fontWeight: '700' },
   time: { ...typography.small, marginTop: 2 },
-  menuBtn: { minWidth: 24, minHeight: MIN_TOUCH, justifyContent: 'center', alignItems: 'center' },
+  menuBtn: {
+    minWidth: MIN_TOUCH - 12,
+    minHeight: MIN_TOUCH - 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -spacing.xs,
+    marginRight: -spacing.xs,
+  },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   tag: {
     backgroundColor: colors.primaryLight,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
-  tagText: { fontSize: 13, fontWeight: '600', color: colors.primaryDark },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-  menu: {
-    position: 'absolute',
-    top: '30%',
-    right: spacing.xl,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    paddingVertical: spacing.xs,
-    minWidth: 160,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 6,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: MIN_TOUCH,
-  },
-  menuText: { ...typography.body },
+  tagText: { fontSize: 14, fontWeight: '600', color: colors.primaryDark },
 });
