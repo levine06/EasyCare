@@ -13,14 +13,16 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import MedicationCard from '../components/MedicationCard';
+import MealCard from '../components/MealCard';
 import { listMedications, deactivateMedication } from '../api/medications';
+import { listMeals, deleteMeal } from '../api/meals';
 import { resyncAllReminders } from '../notifications/reminders';
 import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
 
-// Logs screen with a Food | Medication segmented toggle. The Food tab is a stub for
-// Person 1; the Medication tab is fully implemented here.
+// Logs screen with a Food | Medication segmented toggle. Both tabs are fully
+// implemented: Food (meals) and Medication.
 export default function LogsScreen({ navigation }) {
-  const [tab, setTab] = useState('Medication');
+  const [tab, setTab] = useState('Food');
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -40,7 +42,11 @@ export default function LogsScreen({ navigation }) {
         />
       </View>
 
-      {tab === 'Food' ? <FoodTabStub /> : <MedicationTab navigation={navigation} />}
+      {tab === 'Food' ? (
+        <FoodTab navigation={navigation} />
+      ) : (
+        <MedicationTab navigation={navigation} />
+      )}
     </SafeAreaView>
   );
 }
@@ -59,11 +65,71 @@ function ToggleButton({ label, icon, active, onPress }) {
   );
 }
 
-function FoodTabStub() {
+function FoodTab({ navigation }) {
+  const [meals, setMeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await listMeals();
+      setMeals(data);
+    } catch (e) {
+      Alert.alert('Error', 'Could not load meals.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Reload whenever the Logs tab regains focus (e.g. after add/edit/delete).
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const handleDelete = (meal) => {
+    Alert.alert('Delete meal', 'Remove this meal from your log?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteMeal(meal.id);
+            load();
+          } catch (e) {
+            Alert.alert('Error', 'Could not delete. Please try again.');
+          }
+        },
+      },
+    ]);
+  };
+
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: spacing.xxl }} color={colors.primary} />;
+  }
+
+  if (meals.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.stubText}>No meals logged yet. Tap + to log one.</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.center}>
-      <Text style={styles.stubText}>Food logs — Person 1</Text>
-    </View>
+    <FlatList
+      data={meals}
+      keyExtractor={(item) => String(item.id)}
+      contentContainerStyle={styles.list}
+      renderItem={({ item }) => (
+        <MealCard
+          meal={item}
+          onEdit={(meal) => navigation.navigate('AddMeal', { mealId: meal.id })}
+          onDelete={handleDelete}
+        />
+      )}
+    />
   );
 }
 
