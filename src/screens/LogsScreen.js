@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  SectionList,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
@@ -18,6 +19,7 @@ import EmptyState from '../components/EmptyState';
 import { listMedications, deactivateMedication } from '../api/medications';
 import { listMeals, deleteMeal } from '../api/meals';
 import { resyncAllReminders } from '../notifications/reminders';
+import { formatDateHeading } from '../utils/mealFormat';
 import { colors, spacing, radius, typography, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
 // Logs screen with a Food | Medication segmented toggle. Both tabs are fully
@@ -133,19 +135,40 @@ function FoodTab({ navigation }) {
   }
 
   return (
-    <FlatList
-      data={meals}
+    <SectionList
+      sections={groupMealsByDate(meals)}
       keyExtractor={(item) => String(item.id)}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={styles.foodList}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) => (
+        <Text style={styles.dateHeading} maxFontSizeMultiplier={MAX_FONT_MULT}>
+          {formatDateHeading(section.title)}
+        </Text>
+      )}
       renderItem={({ item }) => (
-        <MealCard
-          meal={item}
-          onEdit={(meal) => navigation.navigate('AddMeal', { mealId: meal.id })}
-          onDelete={handleDelete}
-        />
+        <View style={styles.mealCardWrap}>
+          <MealCard
+            meal={item}
+            onEdit={(meal) => navigation.navigate('AddMeal', { mealId: meal.id })}
+            onDelete={handleDelete}
+          />
+        </View>
       )}
     />
   );
+}
+
+// Meals are already ordered most-recent-first (by created_at); grouping by
+// meal_date while preserving that order keeps both dates and meals within each
+// date sorted from most to least recent.
+function groupMealsByDate(meals) {
+  const byDate = new Map();
+  for (const meal of meals) {
+    const key = meal.meal_date;
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key).push(meal);
+  }
+  return Array.from(byDate.entries()).map(([date, data]) => ({ title: date, data }));
 }
 
 function MedicationTab({ navigation }) {
@@ -249,4 +272,13 @@ const styles = StyleSheet.create({
   toggleTextActive: { color: colors.white },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   listHeader: { ...typography.bodySecondary, marginBottom: spacing.xs },
+  foodList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  dateHeading: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  mealCardWrap: { marginBottom: spacing.md },
 });
