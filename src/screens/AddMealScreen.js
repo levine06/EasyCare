@@ -207,6 +207,12 @@ export default function AddMealScreen({ navigation, route }) {
                   <Text style={styles.photoRetryText}>Upload failed — tap to retry</Text>
                 </View>
               )}
+              {!uploadingPhoto && !photoUploadFailed && (
+                <View style={styles.changePhotoBadge}>
+                  <Ionicons name="camera" size={16} color={colors.white} />
+                  <Text style={styles.changePhotoText}>Change photo</Text>
+                </View>
+              )}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -284,6 +290,19 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   photoRetryText: { color: colors.white, fontWeight: '600', fontSize: 15 },
+  changePhotoBadge: {
+    position: 'absolute',
+    bottom: spacing.sm,
+    right: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(17,24,39,0.7)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  changePhotoText: { color: colors.white, fontWeight: '600', fontSize: 13 },
   saveBtn: {
     minHeight: MIN_TOUCH + 4,
     backgroundColor: colors.primary,
