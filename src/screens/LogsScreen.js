@@ -21,7 +21,8 @@ import { listMedications, deactivateMedication } from '../api/medications';
 import { listMeals, deleteMeal } from '../api/meals';
 import { resyncAllReminders } from '../notifications/reminders';
 import { formatDateHeading } from '../utils/mealFormat';
-import { colors, spacing, radius, typography, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
+import { colors, spacing, radius, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
+import { Platform } from 'react-native';
 
 // Logs screen with a Food | Medication segmented toggle. Both tabs are fully
 // implemented: Food (meals) and Medication. Accepts an optional route param
@@ -185,6 +186,12 @@ function MedicationTab({ navigation }) {
   const load = useCallback(async () => {
     try {
       const data = await listMedications();
+      data.sort((a, b) => {
+        if (!a.reminder_time) return 1;
+        if (!b.reminder_time) return -1;
+        return a.reminder_time.localeCompare(b.reminder_time);
+      });
+
       setMeds(data);
     } catch (e) {
       Alert.alert('Error', 'Could not load medications.');
@@ -200,7 +207,26 @@ function MedicationTab({ navigation }) {
     }, [load])
   );
 
+  const deleteMedication = async (med) => {
+    try {
+      await deactivateMedication(med.id);
+      if (Platform.OS !== 'web') {
+        await resyncAllReminders();
+      }
+      load();
+    } catch (e) {
+      Alert.alert('Error', 'Could not delete medication.');
+    }
+  };
+
   const handleDelete = (med) => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Delete "${med.name}"?`)) {
+        deleteMedication(med);
+      }
+      return;
+    }
+
     Alert.alert(
       'Delete medication',
       `Remove "${med.name}"?`,
@@ -209,15 +235,7 @@ function MedicationTab({ navigation }) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await deactivateMedication(med.id);
-              await resyncAllReminders();
-              load();
-            } catch (e) {
-              Alert.alert('Error', 'Could not delete. Please try again.');
-            }
-          },
+          onPress: () => deleteMedication(med),
         },
       ]
     );
@@ -242,7 +260,6 @@ function MedicationTab({ navigation }) {
       data={meds}
       keyExtractor={(item) => String(item.id)}
       contentContainerStyle={styles.list}
-      ListHeaderComponent={<Text style={styles.listHeader}>All medication logs</Text>}
       renderItem={({ item }) => (
         <MedicationCard
           medication={item}
@@ -279,7 +296,6 @@ const styles = StyleSheet.create({
   toggleText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
   toggleTextActive: { color: colors.white },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
-  listHeader: { ...typography.bodySecondary, marginBottom: spacing.xs },
   foodList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   dateHeading: {
     fontSize: 16,

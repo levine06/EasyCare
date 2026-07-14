@@ -27,18 +27,23 @@ import { resyncAllReminders } from '../notifications/reminders';
 import { daysToFrequency, frequencyToDays } from '../utils/medicationFormat';
 import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
-const DOSAGE_NUMBERS = ['1', '2', '3', '4', '5', '6', '8', '10', '500', '1000'];
 const DOSAGE_UNITS = [
   'tablet',
   'capsule',
   'softgel',
+  'sachet',
+  'patch',
+  'injection',
   'ml',
+  'mg',
+  'g',
+  'mcg',
+  'IU',
+  'drops',
+  'spray',
+  'puff',
   'tsp',
   'tbsp',
-  'drops',
-  'puffs',
-  'IU',
-  'mg',
 ];
 
 // Add + Edit medication share this form. Passing route.params.medicationId puts it
@@ -107,7 +112,8 @@ export default function AddMedicationScreen({ navigation, route }) {
       } else {
         await addMedication(fields);
         await resyncAllReminders();
-        navigation.navigate('Tabs', { screen: 'Home' });
+        Alert.alert('Success', 'Medication added!');
+        navigation.navigate('Tabs', { screen: 'Logs', params: { tab: 'Medication' } });
       }
     } catch (e) {
       Alert.alert('Error', 'Could not save. Please try again.');
@@ -185,12 +191,12 @@ export default function AddMedicationScreen({ navigation, route }) {
                 Dosage
               </Text>
               <View style={styles.dosageRow}>
-                <DropdownSelect
-                  style={styles.dosageCol}
+                <TextInput
+                  style={[styles.dosageCol, styles.dosageInput]}
                   value={dosageNumber}
-                  options={DOSAGE_NUMBERS}
-                  onChange={setDosageNumber}
-                  title="Amount"
+                  onChangeText={setDosageNumber}
+                  placeholder="Amount"
+                  keyboardType="numeric"
                 />
                 <DropdownSelect
                   style={styles.dosageCol}
@@ -263,6 +269,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     ...typography.body,
+  },
+  dosageInput: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.md,
   },
   dosageRow: { flexDirection: 'row', gap: spacing.md },
   dosageCol: { flex: 1 },

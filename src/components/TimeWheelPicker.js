@@ -7,6 +7,28 @@ import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
 // iOS renders the inline spinner wheel (matches the mockup). Android opens the
 // system clock dialog from a tappable field, since it has no inline spinner.
 export default function TimeWheelPicker({ value, onChange }) {
+  if (Platform.OS === 'web') {
+    return (
+      <input
+        type="text"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="08:00"
+        style={{
+          width: "100%",
+          minHeight: "48px",
+          border: "1px solid #D1D5DB",
+          borderRadius: "8px",
+          padding: "0 16px",
+          fontSize: "16px",
+          fontWeight: 400,
+          color: "#4B5563",
+          backgroundColor: "#FFFFFF",
+          boxSizing: "border-box",
+        }}
+      />
+    );
+  }
   const [showAndroid, setShowAndroid] = useState(false);
   const date = timeStringToDate(value);
 
