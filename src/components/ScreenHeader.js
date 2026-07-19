@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography, MIN_TOUCH } from '../theme';
@@ -23,7 +23,10 @@ export default function ScreenHeader({ title, showBack = false }) {
             <Ionicons name="arrow-back" size={28} color={colors.primary} />
           </TouchableOpacity>
         )}
-        <Ionicons name="heart-circle" size={26} color={colors.primary} />
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logo}
+        />
         <Text style={styles.brand}>EasyCare</Text>
       </View>
       {title ? <Text style={styles.title}>{title}</Text> : null}
@@ -43,6 +46,11 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH,
     justifyContent: 'center',
     marginRight: spacing.xs,
+  },
+  logo: {
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
   },
   brand: { fontSize: 18, fontWeight: '700', color: colors.primary },
   title: { ...typography.title, marginTop: spacing.sm },
