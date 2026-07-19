@@ -2,7 +2,7 @@
 // Colours come straight from the design doc (Food & Medicine Log design PDF).
 
 export const colors = {
-  background: '#E5E7EB', // main app background
+  background: '#F8FAFC', // main app background
   card: '#FFFFFF',
 
   primary: '#2F6F6E', // Primary Teal
@@ -17,8 +17,7 @@ export const colors = {
 
   text: '#111827',
   textSecondary: '#4B5563',
-  border: '#D1D5DB', // border / divider
-
+  border: '#D1D5DB',
   white: '#FFFFFF',
 };
 

@@ -1,21 +1,28 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNextUpcoming } from '../api/medications';
+import { Ionicons } from '@expo/vector-icons';
+import { getUpcomingMedications } from '../api/medications';
 import { formatTime12h } from '../utils/medicationFormat';
-import { colors, spacing, MAX_FONT_MULT } from '../theme';
+import {
+  colors,
+  spacing,
+  radius,
+  cardShadow,
+  MAX_FONT_MULT,
+} from '../theme';
 
-// "Upcoming:" headline for the home page — next due, untaken medication today.
-// Exported for Person 3's dashboard; safe to render standalone.
 export default function UpcomingBanner() {
-  const [next, setNext] = useState(null);
+  const [upcoming, setUpcoming] = useState([]);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      getNextUpcoming()
-        .then((m) => active && setNext(m))
-        .catch(() => active && setNext(null));
+
+      getUpcomingMedications(3)
+        .then((meds) => active && setUpcoming(meds))
+        .catch(() => active && setUpcoming([]));
+
       return () => {
         active = false;
       };
@@ -23,21 +30,174 @@ export default function UpcomingBanner() {
   );
 
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
-        Upcoming
-      </Text>
-      <Text style={styles.message} maxFontSizeMultiplier={MAX_FONT_MULT}>
-        {next
-          ? `${next.name} at ${formatTime12h(next.reminder_time)}.`
-          : 'No more medications due today.'}
-      </Text>
+    <View style={styles.card}>
+
+      {/* Header */}
+      <View style={styles.header}>
+        <Ionicons
+          name="time"
+          size={20}
+          color="white"
+        />
+
+        <Text style={styles.headerTitle}>
+          Upcoming
+        </Text>
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+
+        {upcoming.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons
+              name="checkmark-circle"
+              size={40}
+              color={colors.primary}
+            />
+
+            <Text
+              style={styles.empty}
+              maxFontSizeMultiplier={MAX_FONT_MULT}
+            >
+              No more medications due today.
+            </Text>
+          </View>
+        ) : (
+          upcoming.map((med, index) => (
+            <View
+              key={med.id}
+              style={[
+                styles.reminderRow,
+                index === upcoming.length - 1 && {
+                  borderBottomWidth: 0,
+                },
+              ]}
+            >
+
+              {/* Time */}
+              <View style={styles.timeBadge}>
+                <Text
+                  style={styles.time}
+                  maxFontSizeMultiplier={MAX_FONT_MULT}
+                >
+                  {formatTime12h(med.reminder_time)}
+                </Text>
+              </View>
+
+              {/* Medication Name */}
+              <View style={styles.medInfo}>
+                <Text
+                  style={styles.name}
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={MAX_FONT_MULT}
+                >
+                  {med.name}
+                </Text>
+
+                <Text
+                  style={styles.subtitle}
+                  maxFontSizeMultiplier={MAX_FONT_MULT}
+                >
+                  Medication Reminder
+                </Text>
+              </View>
+
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
+
+            </View>
+          ))
+        )}
+
+      </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingVertical: spacing.sm, gap: spacing.xs },
-  label: { fontSize: 20, fontWeight: '600', color: colors.primaryDark },
-  message: { fontSize: 26, fontWeight: '700', lineHeight: 34, color: colors.primary },
+
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    ...cardShadow,
+  },
+
+  header: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+
+  headerTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    marginLeft: spacing.sm,
+  },
+
+  content: {
+    padding: spacing.lg,
+  },
+
+  reminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+
+  timeBadge: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    minWidth: 82,
+    alignItems: 'center',
+  },
+
+  time: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+
+  medInfo: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+
+  name: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.text,
+  },
+
+  subtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
+  },
+
+  empty: {
+    marginTop: spacing.md,
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+
 });
