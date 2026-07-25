@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -35,29 +36,35 @@ export default function LogsScreen({ navigation, route }) {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="Logs" />
-      <View style={styles.toggle}>
-        <ToggleButton
-          label="Food"
-          icon="restaurant"
-          active={tab === 'Food'}
-          onPress={() => setTab('Food')}
-        />
-        <ToggleButton
-          label="Medication"
-          icon="medkit"
-          active={tab === 'Medication'}
-          onPress={() => setTab('Medication')}
-        />
-      </View>
+    <ImageBackground
+      source={require('../../assets/health_bg.png')}
+      style={styles.bg}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScreenHeader title="Logs" />
+        <View style={styles.toggle}>
+          <ToggleButton
+            label="Food"
+            icon="restaurant"
+            active={tab === 'Food'}
+            onPress={() => setTab('Food')}
+          />
+          <ToggleButton
+            label="Medication"
+            icon="medkit"
+            active={tab === 'Medication'}
+            onPress={() => setTab('Medication')}
+          />
+        </View>
 
-      {tab === 'Food' ? (
-        <FoodTab navigation={navigation} />
-      ) : (
-        <MedicationTab navigation={navigation} />
-      )}
-    </SafeAreaView>
+        {tab === 'Food' ? (
+          <FoodTab navigation={navigation} />
+        ) : (
+          <MedicationTab navigation={navigation} />
+        )}
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
@@ -248,7 +255,8 @@ function MedicationTab({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  bg: { flex: 1 },
+  safe: { flex: 1, backgroundColor: 'transparent' },
   toggle: {
     flexDirection: 'row',
     marginHorizontal: spacing.lg,
