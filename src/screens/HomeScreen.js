@@ -10,7 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import TodaysSummary from '../components/TodaysSummary';
-import UpcomingBanner from '../components/UpcomingBanner';
 import TodaysMedicationList from '../components/TodaysMedicationList';
 import TodaysMealsRow from '../components/TodaysMealsRow';
 import TodaysFeedback from '../components/TodaysFeedback';
@@ -64,8 +63,6 @@ export default function HomeScreen() {
             </View>
 
             <TodaysSummary />
-
-            <UpcomingBanner />
 
             <TodaysMedicationList />
 

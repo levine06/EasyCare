@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -141,96 +142,109 @@ export default function AddMedicationScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScreenHeader title={isEdit ? 'Edit medication' : 'Add a medication'} showBack />
-        <ActivityIndicator style={{ marginTop: spacing.xxl }} color={colors.primary} />
-      </SafeAreaView>
+      <ImageBackground
+        source={require('../../assets/health_bg.png')}
+        style={styles.bg}
+        resizeMode="cover"
+      >
+        <SafeAreaView style={styles.safe} edges={['top']}>
+          <ScreenHeader title={isEdit ? 'Edit medication' : 'Add a medication'} showBack />
+          <ActivityIndicator style={{ marginTop: spacing.xxl }} color={colors.primary} />
+        </SafeAreaView>
+      </ImageBackground>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title={isEdit ? 'Edit medication' : 'Add a medication'} showBack />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.card}>
-            <Text style={[styles.label, styles.firstLabel]} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              Title
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="Enter medication name"
-              placeholderTextColor={colors.textSecondary}
-              maxFontSizeMultiplier={MAX_FONT_MULT}
-            />
+    <ImageBackground
+      source={require('../../assets/health_bg.png')}
+      style={styles.bg}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScreenHeader title={isEdit ? 'Edit medication' : 'Add a medication'} showBack />
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <View style={styles.card}>
+              <Text style={[styles.label, styles.firstLabel]} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Title
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter medication name"
+                placeholderTextColor={colors.textSecondary}
+                maxFontSizeMultiplier={MAX_FONT_MULT}
+              />
 
-            <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              Dosage
-            </Text>
-            <View style={styles.dosageRow}>
-              <DropdownSelect
-                style={styles.dosageCol}
-                value={dosageNumber}
-                options={DOSAGE_NUMBERS}
-                onChange={setDosageNumber}
-                title="Amount"
-              />
-              <DropdownSelect
-                style={styles.dosageCol}
-                value={dosageUnit}
-                options={DOSAGE_UNITS}
-                onChange={setDosageUnit}
-                title="Unit"
-              />
+              <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Dosage
+              </Text>
+              <View style={styles.dosageRow}>
+                <DropdownSelect
+                  style={styles.dosageCol}
+                  value={dosageNumber}
+                  options={DOSAGE_NUMBERS}
+                  onChange={setDosageNumber}
+                  title="Amount"
+                />
+                <DropdownSelect
+                  style={styles.dosageCol}
+                  value={dosageUnit}
+                  options={DOSAGE_UNITS}
+                  onChange={setDosageUnit}
+                  title="Unit"
+                />
+              </View>
+
+              <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Time
+              </Text>
+              <TimeWheelPicker value={time} onChange={setTime} />
+
+              <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Frequency
+              </Text>
+              <DayOfWeekSelector value={days} onChange={setDays} />
             </View>
 
-            <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              Time
-            </Text>
-            <TimeWheelPicker value={time} onChange={setTime} />
-
-            <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              Frequency
-            </Text>
-            <DayOfWeekSelector value={days} onChange={setDays} />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.saveBtn, saving && styles.btnDisabled]}
-            onPress={handleSave}
-            disabled={saving}
-            accessibilityRole="button"
-          >
-            <Text style={styles.saveBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              {isEdit ? 'Save changes' : 'Add medication'}
-            </Text>
-          </TouchableOpacity>
-
-          {isEdit && (
             <TouchableOpacity
-              style={[styles.deleteBtn, saving && styles.btnDisabled]}
-              onPress={handleDelete}
+              style={[styles.saveBtn, saving && styles.btnDisabled]}
+              onPress={handleSave}
               disabled={saving}
               accessibilityRole="button"
             >
-              <Text style={styles.deleteBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                Delete medication
+              <Text style={styles.saveBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                {isEdit ? 'Save changes' : 'Add medication'}
               </Text>
             </TouchableOpacity>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+            {isEdit && (
+              <TouchableOpacity
+                style={[styles.deleteBtn, saving && styles.btnDisabled]}
+                onPress={handleDelete}
+                disabled={saving}
+                accessibilityRole="button"
+              >
+                <Text style={styles.deleteBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                  Delete medication
+                </Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  bg: { flex: 1 },
+  safe: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
   card: {

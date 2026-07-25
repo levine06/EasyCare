@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -172,117 +173,130 @@ export default function AddMealScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScreenHeader title={isEdit ? 'Edit meal' : 'Log a meal'} showBack />
-        <ActivityIndicator style={{ marginTop: spacing.xxl }} color={colors.primary} />
-      </SafeAreaView>
+      <ImageBackground
+        source={require('../../assets/health_bg.png')}
+        style={styles.bg}
+        resizeMode="cover"
+      >
+        <SafeAreaView style={styles.safe} edges={['top']}>
+          <ScreenHeader title={isEdit ? 'Edit meal' : 'Log a meal'} showBack />
+          <ActivityIndicator style={{ marginTop: spacing.xxl }} color={colors.primary} />
+        </SafeAreaView>
+      </ImageBackground>
     );
   }
 
   const previewUri = localPhotoUri || photoUrl;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title={isEdit ? 'Edit meal' : 'Log a meal'} showBack />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.card}>
-            <Text style={[styles.label, styles.firstLabel]} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              Meal type
-            </Text>
-            <DropdownSelect
-              value={mealType}
-              options={MEAL_TYPES}
-              onChange={setMealType}
-              title="Meal type"
-            />
+    <ImageBackground
+      source={require('../../assets/health_bg.png')}
+      style={styles.bg}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScreenHeader title={isEdit ? 'Edit meal' : 'Log a meal'} showBack />
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <View style={styles.card}>
+              <Text style={[styles.label, styles.firstLabel]} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Meal type
+              </Text>
+              <DropdownSelect
+                value={mealType}
+                options={MEAL_TYPES}
+                onChange={setMealType}
+                title="Meal type"
+              />
 
-            <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              Upload photo
-            </Text>
-            {previewUri ? (
+              <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Upload photo
+              </Text>
+              {previewUri ? (
+                <TouchableOpacity
+                  onPress={
+                    photoUploadFailed ? () => uploadPhoto(localPhotoUri) : handlePickPhoto
+                  }
+                  activeOpacity={0.8}
+                >
+                  <Image source={{ uri: previewUri }} style={styles.photoPreview} />
+                  {uploadingPhoto && (
+                    <View style={styles.photoOverlay}>
+                      <ActivityIndicator color={colors.white} />
+                    </View>
+                  )}
+                  {photoUploadFailed && !uploadingPhoto && (
+                    <View style={styles.photoOverlay}>
+                      <Ionicons name="refresh" size={28} color={colors.white} />
+                      <Text style={styles.photoRetryText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                        Upload failed — tap to retry
+                      </Text>
+                    </View>
+                  )}
+                  {!uploadingPhoto && !photoUploadFailed && (
+                    <View style={styles.changePhotoBadge}>
+                      <Ionicons name="camera" size={16} color={colors.white} />
+                      <Text style={styles.changePhotoText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                        Change photo
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.uploadBtn}
+                  onPress={handlePickPhoto}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="image-outline" size={24} color={colors.primary} />
+                  <Text style={styles.uploadBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                    Upload photo
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Select food tags
+              </Text>
+              <FoodTagSelector value={tags} onChange={setTags} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, (saving || uploadingPhoto) && styles.btnDisabled]}
+              onPress={handleSave}
+              disabled={saving || uploadingPhoto}
+              accessibilityRole="button"
+            >
+              <Text style={styles.saveBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                {isEdit ? 'Save changes' : 'Save meal'}
+              </Text>
+            </TouchableOpacity>
+
+            {isEdit && (
               <TouchableOpacity
-                onPress={
-                  photoUploadFailed ? () => uploadPhoto(localPhotoUri) : handlePickPhoto
-                }
-                activeOpacity={0.8}
-              >
-                <Image source={{ uri: previewUri }} style={styles.photoPreview} />
-                {uploadingPhoto && (
-                  <View style={styles.photoOverlay}>
-                    <ActivityIndicator color={colors.white} />
-                  </View>
-                )}
-                {photoUploadFailed && !uploadingPhoto && (
-                  <View style={styles.photoOverlay}>
-                    <Ionicons name="refresh" size={28} color={colors.white} />
-                    <Text style={styles.photoRetryText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                      Upload failed — tap to retry
-                    </Text>
-                  </View>
-                )}
-                {!uploadingPhoto && !photoUploadFailed && (
-                  <View style={styles.changePhotoBadge}>
-                    <Ionicons name="camera" size={16} color={colors.white} />
-                    <Text style={styles.changePhotoText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                      Change photo
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.uploadBtn}
-                onPress={handlePickPhoto}
+                style={[styles.deleteBtn, saving && styles.btnDisabled]}
+                onPress={handleDelete}
+                disabled={saving}
                 accessibilityRole="button"
               >
-                <Ionicons name="image-outline" size={24} color={colors.primary} />
-                <Text style={styles.uploadBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                  Upload photo
+                <Text style={styles.deleteBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                  Delete meal
                 </Text>
               </TouchableOpacity>
             )}
-
-            <Text style={styles.label} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              Select food tags
-            </Text>
-            <FoodTagSelector value={tags} onChange={setTags} />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.saveBtn, (saving || uploadingPhoto) && styles.btnDisabled]}
-            onPress={handleSave}
-            disabled={saving || uploadingPhoto}
-            accessibilityRole="button"
-          >
-            <Text style={styles.saveBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              {isEdit ? 'Save changes' : 'Save meal'}
-            </Text>
-          </TouchableOpacity>
-
-          {isEdit && (
-            <TouchableOpacity
-              style={[styles.deleteBtn, saving && styles.btnDisabled]}
-              onPress={handleDelete}
-              disabled={saving}
-              accessibilityRole="button"
-            >
-              <Text style={styles.deleteBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                Delete meal
-              </Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  bg: { flex: 1 },
+  safe: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
   card: {
