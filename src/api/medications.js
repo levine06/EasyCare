@@ -1,9 +1,5 @@
 import { supabase } from '../../lib/supabaseClient';
-import {
-  isDueOnDate,
-  reminderTimeOnDate,
-  localDateKey,
-} from '../utils/medicationFormat';
+import { isDueOnDate, localDateKey } from '../utils/medicationFormat';
 
 // All Supabase access for the medication module lives here so screens stay dumb.
 // Tables (already created): `medications`, `medication_logs`. Single-user app, no auth.
@@ -123,38 +119,6 @@ export async function unmarkTaken(logId) {
     .delete()
     .eq('id', logId);
   if (error) throw error;
-}
-
-// ---- home dashboard helpers (exported for Person 3) ---------------------
-
-// Next due-and-untaken medication today whose reminder_time is still ahead.
-// Returns the medication (or null) for the "Upcoming:" banner.
-export async function getNextUpcoming() {
-  const meds = await getTodaysMedications();
-  const now = new Date();
-  return (
-    meds
-      .filter((m) => !m.taken && m.reminder_time)
-      .filter((m) => reminderTimeOnDate(m.reminder_time) >= now)
-      .sort(
-        (a, b) =>
-          reminderTimeOnDate(a.reminder_time) -
-          reminderTimeOnDate(b.reminder_time)
-      )[0] || null
-  );
-}
-
-// Medications due today, past their reminder time, with no taken log — i.e. missed.
-// Person 3 uses this for "Today's Feedback".
-export async function getMissedToday() {
-  const meds = await getTodaysMedications();
-  const now = new Date();
-  return meds.filter(
-    (m) =>
-      !m.taken &&
-      m.reminder_time &&
-      reminderTimeOnDate(m.reminder_time) < now
-  );
 }
 
 // Exported for reminder scheduling convenience.

@@ -60,3 +60,18 @@ export function localDateKey(date = new Date()) {
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
+
+// Adds a `missed` flag (due time passed, not taken) to each medication, then sorts
+// untaken-first by reminder time, taken sunk to the bottom. Shared by every Home-tab
+// widget that reads today's medications so "next up" / "missed" stay consistent.
+export function annotateAndSortMedications(meds) {
+  const now = new Date();
+  const annotated = meds.map((m) => ({
+    ...m,
+    missed: !m.taken && Boolean(m.reminder_time) && reminderTimeOnDate(m.reminder_time) < now,
+  }));
+  return annotated.sort((a, b) => {
+    if (a.taken !== b.taken) return a.taken ? 1 : -1;
+    return (a.reminder_time || '').localeCompare(b.reminder_time || '');
+  });
+}

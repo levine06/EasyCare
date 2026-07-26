@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,67 +6,41 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import SectionCard from './SectionCard';
 import EmptyState from './EmptyState';
-import {
-  getTodaysMedications,
-  markTaken,
-  unmarkTaken,
-} from '../api/medications';
-import { formatTime12h, reminderTimeOnDate } from '../utils/medicationFormat';
+import { useTodaysMedications } from '../hooks/useTodaysMedications';
+import { formatTime12h } from '../utils/medicationFormat';
 import { colors, spacing, radius, typography, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
-// Home-page "Today's Medication" card. Untaken medications show first (up to 3);
-// taken ones are always tucked behind "View more", even if fewer than 3 are shown,
-// so the default view stays focused on what's still left to do today. Missed doses
-// (due time passed, not taken) get a red "Missed" badge. Tapping a row (outside the
+const PREVIEW_COUNT = 3;
+
+// Home-page "Today's Medication" card. A single list, untaken medications first
+// (soonest reminder_time first), taken ones sorted to the bottom — only the first
+// three rows show by default, the rest sit behind "View more". Missed doses (due
+// time passed, not taken) get a red "Missed" badge. Tapping a row (outside the
 // checkbox) opens the edit screen.
 export default function TodaysMedicationList() {
   const navigation = useNavigation();
-  const [meds, setMeds] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { meds, loading, toggleTaken } = useTodaysMedications();
   const [expanded, setExpanded] = useState(false);
   const [busyId, setBusyId] = useState(null);
 
-  const load = useCallback(async () => {
-    try {
-      const data = await getTodaysMedications();
-      setMeds(annotateAndSort(data));
-    } catch (e) {
-      setMeds([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
-
-  const toggleTaken = async (med) => {
+  const handleToggle = async (med) => {
     setBusyId(med.id);
     try {
-      if (med.taken) {
-        if (med.takenLogId) await unmarkTaken(med.takenLogId);
-      } else {
-        await markTaken(med.id);
-      }
-      await load();
-    } catch (e) {
-      // leave the list as-is on error
+      await toggleTaken(med);
     } finally {
       setBusyId(null);
     }
   };
 
-  const untaken = meds.filter((m) => !m.taken);
-  const taken = meds.filter((m) => m.taken);
-  const hasHidden = untaken.length > 3 || taken.length > 0;
-  const visible = expanded ? [...untaken, ...taken] : untaken.slice(0, 3);
+  const hasHidden = meds.length > PREVIEW_COUNT;
+  const visible = expanded ? meds : meds.slice(0, PREVIEW_COUNT);
+
+  const openMed = (med) =>
+    navigation.navigate('AddMedication', { medicationId: med.id });
 
   return (
     <SectionCard
@@ -80,18 +54,13 @@ export default function TodaysMedicationList() {
         <EmptyState icon="checkmark-circle-outline" message="Nothing scheduled for today" />
       ) : (
         <>
-          {visible.length === 0 && (
-            <EmptyState icon="checkmark-circle-outline" message="All medications taken for today" />
-          )}
           {visible.map((med) => (
             <MedRow
               key={med.id}
               med={med}
               busy={busyId === med.id}
-              onToggle={() => toggleTaken(med)}
-              onOpen={() =>
-                navigation.navigate('AddMedication', { medicationId: med.id })
-              }
+              onToggle={() => handleToggle(med)}
+              onOpen={() => openMed(med)}
             />
           ))}
           {hasHidden && (
@@ -152,20 +121,6 @@ function MedRow({ med, busy, onToggle, onOpen }) {
       </TouchableOpacity>
     </View>
   );
-}
-
-// Adds a `missed` flag (due time passed, not taken) to each medication, then sorts
-// untaken-first by reminder time, taken sunk to the bottom.
-function annotateAndSort(meds) {
-  const now = new Date();
-  const annotated = meds.map((m) => ({
-    ...m,
-    missed: !m.taken && Boolean(m.reminder_time) && reminderTimeOnDate(m.reminder_time) < now,
-  }));
-  return annotated.sort((a, b) => {
-    if (a.taken !== b.taken) return a.taken ? 1 : -1;
-    return (a.reminder_time || '').localeCompare(b.reminder_time || '');
-  });
 }
 
 const styles = StyleSheet.create({

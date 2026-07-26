@@ -9,18 +9,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
+import NextMedicationHero from '../components/NextMedicationHero';
 import TodaysSummary from '../components/TodaysSummary';
 import TodaysMedicationList from '../components/TodaysMedicationList';
 import TodaysMealsRow from '../components/TodaysMealsRow';
 import TodaysFeedback from '../components/TodaysFeedback';
+import { TodaysMedicationsProvider } from '../hooks/useTodaysMedications';
 
 import { spacing } from '../theme';
 
 export default function HomeScreen() {
-  // Get the current hour once
   const hour = new Date().getHours();
 
-  // Determine greeting and background together
   let greeting = '';
   let background;
 
@@ -51,7 +51,6 @@ export default function HomeScreen() {
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            {/* Greeting */}
             <View style={styles.greetingContainer}>
               <Text style={styles.greetingTitle}>
                 {greeting}
@@ -62,13 +61,17 @@ export default function HomeScreen() {
               </Text>
             </View>
 
-            <TodaysSummary />
+            <TodaysMedicationsProvider>
+              <NextMedicationHero />
 
-            <TodaysMedicationList />
+              <TodaysSummary />
 
-            <TodaysMealsRow />
+              <TodaysMedicationList />
 
-            <TodaysFeedback />
+              <TodaysMealsRow />
+
+              <TodaysFeedback />
+            </TodaysMedicationsProvider>
 
             {/* Extra space above bottom tab bar */}
             <View style={{ height: 30 }} />

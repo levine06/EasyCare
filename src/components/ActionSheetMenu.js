@@ -5,12 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, MAX_FONT_MULT } from '../theme';
 
 // Bottom action sheet replacing the old fixed-position dropdown menu. Appears in a
-// predictable place (slides up from the bottom) with large rows and an explicit
-// Cancel — easier for elderly users than a small floating menu anchored to
-// whichever card happened to be tapped.
+// predictable place (bottom of the screen) with large rows and an explicit Cancel —
+// easier for elderly users than a small floating menu anchored to whichever card
+// happened to be tapped.
 export default function ActionSheetMenu({ visible, onClose, onEdit, onDelete }) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheetWrap} onPress={() => {}}>
           <SafeAreaView edges={['bottom']}>

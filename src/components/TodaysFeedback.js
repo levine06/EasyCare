@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import SectionCard from './SectionCard';
 import EmptyState from './EmptyState';
 import { getTodaysMeals } from '../api/meals';
-import { getMissedToday } from '../api/medications';
+import { useTodaysMedications } from '../hooks/useTodaysMedications';
 import { formatTime12h } from '../utils/medicationFormat';
 import { FOOD_TAGS } from './FoodTagSelector';
 import { colors, spacing, radius, typography, MAX_FONT_MULT } from '../theme';
@@ -14,23 +14,27 @@ const MAX_POSITIVE = 2;
 const MAX_SUGGESTIONS = 2;
 
 // Home-page "Today's Feedback" card: simple sentences based on food-group coverage
-// from today's logged meals, plus a note about any missed medications.
+// from today's logged meals, plus a note about any missed medications. Missed meds
+// come from the shared useTodaysMedications() state so this always agrees with the
+// hero banner and medication list, instead of drifting out of sync.
 export default function TodaysFeedback() {
-  const [rows, setRows] = useState(null);
+  const { meds, loading: medsLoading } = useTodaysMedications();
+  const [meals, setMeals] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      Promise.all([getTodaysMeals(), getMissedToday()])
-        .then(([meals, missed]) => {
-          if (active) setRows(buildFeedbackRows(meals, missed));
-        })
-        .catch(() => active && setRows([]));
+      getTodaysMeals()
+        .then((data) => active && setMeals(data))
+        .catch(() => active && setMeals([]));
       return () => {
         active = false;
       };
     }, [])
   );
+
+  const missed = meds.filter((m) => m.missed);
+  const rows = meals === null || medsLoading ? null : buildFeedbackRows(meals, missed);
 
   return (
     <SectionCard icon="chatbubble-ellipses" title="Today's Feedback">
