@@ -19,6 +19,10 @@ export const colors = {
   textSecondary: '#4B5563',
   border: '#D1D5DB',
   white: '#FFFFFF',
+
+  // Muted placeholder/example text (e.g. "e.g. Hot food") — lighter than
+  // textSecondary so it visibly reads as a hint, not entered content.
+  placeholderText: 'rgba(75, 85, 99, 0.45)',
 };
 
 // Generous spacing scale for a senior-friendly, low-density layout.

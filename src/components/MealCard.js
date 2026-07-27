@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ActionSheetMenu from './ActionSheetMenu';
 import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
-import { formatRelativeTime } from '../utils/mealFormat';
+import { formatExactTime } from '../utils/mealFormat';
 
-// Logs-tab card: photo, title (meal type), relative time, food tags, and a 3-dot
-// menu with Edit / Delete. Matches the food logs mockup.
+// Logs-tab card: photo, title (meal type), exact logged time, food tags, and a
+// 3-dot menu with Edit / Delete. Matches the food logs mockup.
 export default function MealCard({ meal, onEdit, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const tags = Array.isArray(meal.food_tags) ? meal.food_tags : [];
@@ -28,7 +28,7 @@ export default function MealCard({ meal, onEdit, onDelete }) {
               {meal.meal_type}
             </Text>
             <Text style={styles.time} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              {formatRelativeTime(meal.created_at)}
+              {formatExactTime(meal.created_at)}
             </Text>
           </View>
           <TouchableOpacity

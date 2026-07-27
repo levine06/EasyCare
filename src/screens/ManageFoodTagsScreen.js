@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -108,134 +109,143 @@ export default function ManageFoodTagsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="Food tags" showBack />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
-            Default tags
-          </Text>
-          <View style={styles.card}>
-            {FOOD_TAGS.map((name, i) => (
-              <View key={name} style={[styles.row, i === FOOD_TAGS.length - 1 && styles.rowLast]}>
-                <Text style={styles.rowText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                  {name}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
-            Custom tags
-          </Text>
-          <View style={styles.card}>
-            {customTags === null ? (
-              <ActivityIndicator style={{ padding: spacing.lg }} color={colors.primary} />
-            ) : customTags.length === 0 ? (
-              <Text style={styles.emptyText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                No custom tags yet. Add one below.
-              </Text>
-            ) : (
-              customTags.map((tag, i) => (
-                <View
-                  key={tag.id}
-                  style={[styles.row, i === customTags.length - 1 && styles.rowLast]}
-                >
-                  {editingId === tag.id ? (
-                    <>
-                      <TextInput
-                        style={styles.editInput}
-                        value={editingText}
-                        onChangeText={setEditingText}
-                        autoFocus
-                        maxLength={MAX_TAG_LENGTH}
-                        maxFontSizeMultiplier={MAX_FONT_MULT}
-                      />
-                      <TouchableOpacity
-                        style={styles.iconBtn}
-                        onPress={() => saveEdit(tag.id)}
-                        disabled={savingEdit}
-                        accessibilityRole="button"
-                        accessibilityLabel="Save tag name"
-                      >
-                        <Ionicons name="checkmark" size={22} color={colors.primary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.iconBtn}
-                        onPress={cancelEdit}
-                        disabled={savingEdit}
-                        accessibilityRole="button"
-                        accessibilityLabel="Cancel editing"
-                      >
-                        <Ionicons name="close" size={22} color={colors.textSecondary} />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={styles.rowText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                        {tag.name}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.iconBtn}
-                        onPress={() => startEdit(tag)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Edit ${tag.name}`}
-                      >
-                        <Ionicons name="pencil" size={20} color={colors.textSecondary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.iconBtn}
-                        onPress={() => handleDelete(tag)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Delete ${tag.name}`}
-                      >
-                        <Ionicons name="trash-outline" size={20} color={colors.warning} />
-                      </TouchableOpacity>
-                    </>
-                  )}
+    <ImageBackground
+      source={require('../../assets/health_bg.png')}
+      style={styles.bg}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScreenHeader title="Food tags" showBack />
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              Default tags
+            </Text>
+            <View style={styles.card}>
+              {FOOD_TAGS.map((name, i) => (
+                <View key={name} style={[styles.row, i === FOOD_TAGS.length - 1 && styles.rowLast]}>
+                  <Text style={styles.rowText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                    {name}
+                  </Text>
                 </View>
-              ))
-            )}
-          </View>
+              ))}
+            </View>
 
-          <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
-            Add a tag
-          </Text>
-          <View style={styles.addRow}>
-            <TextInput
-              style={styles.addInput}
-              value={newTagText}
-              onChangeText={setNewTagText}
-              placeholder="e.g. Snacks"
-              maxLength={MAX_TAG_LENGTH}
-              maxFontSizeMultiplier={MAX_FONT_MULT}
-            />
-            <TouchableOpacity
-              style={[styles.addBtn, adding && styles.btnDisabled]}
-              onPress={handleAdd}
-              disabled={adding}
-              accessibilityRole="button"
-            >
-              {adding ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={styles.addBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                  Add
+            <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              Custom tags
+            </Text>
+            <View style={styles.card}>
+              {customTags === null ? (
+                <ActivityIndicator style={{ padding: spacing.lg }} color={colors.primary} />
+              ) : customTags.length === 0 ? (
+                <Text style={styles.emptyText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                  No custom tags yet. Add one below.
                 </Text>
+              ) : (
+                customTags.map((tag, i) => (
+                  <View
+                    key={tag.id}
+                    style={[styles.row, i === customTags.length - 1 && styles.rowLast]}
+                  >
+                    {editingId === tag.id ? (
+                      <>
+                        <TextInput
+                          style={styles.editInput}
+                          value={editingText}
+                          onChangeText={setEditingText}
+                          autoFocus
+                          maxLength={MAX_TAG_LENGTH}
+                          maxFontSizeMultiplier={MAX_FONT_MULT}
+                        />
+                        <TouchableOpacity
+                          style={styles.iconBtn}
+                          onPress={() => saveEdit(tag.id)}
+                          disabled={savingEdit}
+                          accessibilityRole="button"
+                          accessibilityLabel="Save tag name"
+                        >
+                          <Ionicons name="checkmark" size={22} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.iconBtn}
+                          onPress={cancelEdit}
+                          disabled={savingEdit}
+                          accessibilityRole="button"
+                          accessibilityLabel="Cancel editing"
+                        >
+                          <Ionicons name="close" size={22} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.rowText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                          {tag.name}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.iconBtn}
+                          onPress={() => startEdit(tag)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit ${tag.name}`}
+                        >
+                          <Ionicons name="pencil" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.iconBtn}
+                          onPress={() => handleDelete(tag)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Delete ${tag.name}`}
+                        >
+                          <Ionicons name="trash-outline" size={20} color={colors.warning} />
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                ))
               )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            </View>
+
+            <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
+              Add a tag
+            </Text>
+            <View style={styles.addRow}>
+              <TextInput
+                style={styles.addInput}
+                value={newTagText}
+                onChangeText={setNewTagText}
+                placeholder="e.g. Hot food"
+                placeholderTextColor={colors.placeholderText}
+                maxLength={MAX_TAG_LENGTH}
+                maxFontSizeMultiplier={MAX_FONT_MULT}
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.addBtn, adding && styles.btnDisabled]}
+                onPress={handleAdd}
+                disabled={adding}
+                accessibilityRole="button"
+              >
+                {adding ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.addBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                    Add
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  bg: { flex: 1 },
+  safe: { flex: 1, backgroundColor: 'transparent' },
   flex: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   sectionLabel: { ...typography.sectionLabel, marginTop: spacing.md },

@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ActionSheetMenu from './ActionSheetMenu';
 import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
-import { formatRelativeTime } from '../utils/mealFormat';
+import { formatExactTime } from '../utils/mealFormat';
 
 // Medication History card: photo (or generic placeholder — used for both
 // skipped and otherwise-missing photos, no distinct "skipped" styling),
-// medication name, relative time taken, dosage pill, and a 3-dot menu with
+// medication name, exact time taken, dosage pill, and a 3-dot menu with
 // Edit (replace/remove photo) / Delete. Mirrors MealCard.js's layout.
 export default function MedicationHistoryCard({ log, onEdit, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -30,7 +30,7 @@ export default function MedicationHistoryCard({ log, onEdit, onDelete }) {
               {medication.name}
             </Text>
             <Text style={styles.time} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              {formatRelativeTime(log.taken_at)}
+              {formatExactTime(log.taken_at)}
             </Text>
           </View>
           <TouchableOpacity

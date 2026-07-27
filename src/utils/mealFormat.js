@@ -3,17 +3,15 @@
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// "15 min ago", "3 hours ago", "2 days ago" — used on the Logs food cards.
-export function formatRelativeTime(iso) {
+// "2:45 PM" — the exact time logged, used on the Logs food and medication
+// history cards (the section heading above each card already shows the date).
+export function formatExactTime(iso) {
   if (!iso) return '';
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? '' : 's'} ago`;
+  const d = new Date(iso);
+  const hours = d.getHours();
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+  return `${hour12}:${String(d.getMinutes()).padStart(2, '0')} ${period}`;
 }
 
 export function formatAddedOnDate(iso) {

@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Image,
   ImageBackground,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,10 +20,12 @@ import { uploadMedicationPhoto, markTaken, updateMedicationLogPhoto } from '../a
 import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
 // Gate screen shown before a medication can be marked taken: take/upload a photo
-// of the medication, or skip. Reused in edit mode (from Medication History's
-// "Edit" action) to replace/remove an existing log's photo — edit mode never
-// touches taken_at and has no Skip button (skip only applies to the original
-// mark-taken decision). Mirrors AddMealScreen.js's photo upload/retry pattern.
+// of the medication, or just tap "Log medication" with no photo — a photo is
+// optional, not required, so the button is always enabled; logging with no
+// photo is internally identical to the old explicit "skip" (photo_url: null).
+// Reused in edit mode (from Medication History's "Edit" action) to
+// replace/remove an existing log's photo — edit mode never touches taken_at.
+// Mirrors AddMealScreen.js's photo upload/retry pattern.
 export default function LogMedicationScreen({ navigation, route }) {
   const { medicationId, medicationName, logId, existingPhotoUrl } = route.params ?? {};
   const isEdit = logId != null;
@@ -77,6 +81,29 @@ export default function LogMedicationScreen({ navigation, route }) {
     await uploadPhoto(localUri);
   };
 
+  // Native photo-source picker: iOS gets the real ActionSheetIOS sheet; Android
+  // (which has no ActionSheetIOS) gets the platform's equivalent list-style Alert.
+  const showPhotoSourceOptions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Take Photo', 'Choose from Library', 'Cancel'],
+          cancelButtonIndex: 2,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) pickPhoto('camera');
+          if (buttonIndex === 1) pickPhoto('library');
+        }
+      );
+      return;
+    }
+    Alert.alert('Add Photo', undefined, [
+      { text: 'Take Photo', onPress: () => pickPhoto('camera') },
+      { text: 'Choose from Library', onPress: () => pickPhoto('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const handleRemovePhoto = () => {
     setLocalPhotoUri(null);
     setPhotoUrl(null);
@@ -91,17 +118,6 @@ export default function LogMedicationScreen({ navigation, route }) {
     setSaving(true);
     try {
       await markTaken(medicationId, photoUrl);
-      navigation.goBack();
-    } catch (e) {
-      Alert.alert('Error', 'Could not save. Please try again.');
-      setSaving(false);
-    }
-  };
-
-  const handleSkip = async () => {
-    setSaving(true);
-    try {
-      await markTaken(medicationId, null);
       navigation.goBack();
     } catch (e) {
       Alert.alert('Error', 'Could not save. Please try again.');
@@ -130,8 +146,7 @@ export default function LogMedicationScreen({ navigation, route }) {
   // This does NOT block the deliberate "Remove photo" path, since
   // handleRemovePhoto clears localPhotoUri along with photoUrl.
   const photoPendingUpload = !!localPhotoUri && !photoUrl;
-  const confirmDisabled =
-    saving || uploadingPhoto || (!isEdit && !photoUrl) || photoPendingUpload;
+  const confirmDisabled = saving || uploadingPhoto || photoPendingUpload;
 
   return (
     <ImageBackground
@@ -168,28 +183,16 @@ export default function LogMedicationScreen({ navigation, route }) {
                     </TouchableOpacity>
                   )}
                 </View>
-                <View style={styles.photoActionRow}>
-                  <TouchableOpacity
-                    style={styles.photoActionBtn}
-                    onPress={() => pickPhoto('camera')}
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name="camera-outline" size={20} color={colors.primary} />
-                    <Text style={styles.photoActionText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                      Retake
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.photoActionBtn}
-                    onPress={() => pickPhoto('library')}
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name="image-outline" size={20} color={colors.primary} />
-                    <Text style={styles.photoActionText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                      Choose different
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  style={styles.changePhotoBtn}
+                  onPress={showPhotoSourceOptions}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="camera-outline" size={20} color={colors.primary} />
+                  <Text style={styles.changePhotoText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                    Change Photo
+                  </Text>
+                </TouchableOpacity>
                 {isEdit && (
                   <TouchableOpacity onPress={handleRemovePhoto} accessibilityRole="button">
                     <Text style={styles.removeText} maxFontSizeMultiplier={MAX_FONT_MULT}>
@@ -199,28 +202,28 @@ export default function LogMedicationScreen({ navigation, route }) {
                 )}
               </>
             ) : (
-              <View style={styles.pickRow}>
+              <>
+                {isEdit && (
+                  // No photo on this log (it was logged without one). Show the same
+                  // generic placeholder MedicationHistoryCard uses, so this screen
+                  // makes clear there's no photo to remove/retake, only to add.
+                  <View style={styles.photoWrap}>
+                    <View style={[styles.photoPreview, styles.photoPlaceholder]}>
+                      <Ionicons name="medkit-outline" size={40} color={colors.textSecondary} />
+                    </View>
+                  </View>
+                )}
                 <TouchableOpacity
                   style={styles.pickBtn}
-                  onPress={() => pickPhoto('camera')}
+                  onPress={showPhotoSourceOptions}
                   accessibilityRole="button"
                 >
                   <Ionicons name="camera-outline" size={24} color={colors.primary} />
                   <Text style={styles.pickBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                    Take Photo
+                    Add Photo
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.pickBtn}
-                  onPress={() => pickPhoto('library')}
-                  accessibilityRole="button"
-                >
-                  <Ionicons name="image-outline" size={24} color={colors.primary} />
-                  <Text style={styles.pickBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                    Upload Photo
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              </>
             )}
           </View>
 
@@ -231,17 +234,9 @@ export default function LogMedicationScreen({ navigation, route }) {
             accessibilityRole="button"
           >
             <Text style={styles.confirmBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              {isEdit ? 'Save changes' : 'Confirm'}
+              {isEdit ? 'Save changes' : 'Save'}
             </Text>
           </TouchableOpacity>
-
-          {!isEdit && !photoUrl && (
-            <TouchableOpacity onPress={handleSkip} disabled={saving} accessibilityRole="button">
-              <Text style={styles.skipText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                Skip
-              </Text>
-            </TouchableOpacity>
-          )}
         </ScrollView>
       </SafeAreaView>
     </ImageBackground>
@@ -260,10 +255,9 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   medName: { ...typography.sectionLabel, fontSize: 20, fontWeight: '700', textAlign: 'center' },
-  pickRow: { flexDirection: 'row', gap: spacing.md },
   pickBtn: {
-    flex: 1,
     minHeight: MIN_TOUCH + 20,
+    flexDirection: 'row',
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -280,6 +274,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.border,
   },
+  photoPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   photoOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -289,9 +289,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   photoRetryText: { color: colors.white, fontWeight: '600', fontSize: 15 },
-  photoActionRow: { flexDirection: 'row', gap: spacing.md },
-  photoActionBtn: {
-    flex: 1,
+  changePhotoBtn: {
     minHeight: MIN_TOUCH,
     flexDirection: 'row',
     alignItems: 'center',
@@ -301,7 +299,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
   },
-  photoActionText: { ...typography.body, color: colors.primary, fontWeight: '600', fontSize: 15 },
+  changePhotoText: { ...typography.body, color: colors.primary, fontWeight: '600', fontSize: 15 },
   removeText: { color: colors.warning, fontWeight: '600', fontSize: 15, textAlign: 'center' },
   confirmBtn: {
     minHeight: 56,
@@ -312,10 +310,4 @@ const styles = StyleSheet.create({
   },
   confirmBtnText: { color: colors.white, fontSize: 18, fontWeight: '700' },
   btnDisabled: { opacity: 0.6 },
-  skipText: {
-    color: colors.textSecondary,
-    fontWeight: '600',
-    fontSize: 16,
-    textAlign: 'center',
-  },
 });

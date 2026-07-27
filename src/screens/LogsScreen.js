@@ -70,17 +70,34 @@ export default function LogsScreen({ navigation, route }) {
   );
 }
 
-function ToggleButton({ label, icon, active, onPress }) {
+// `compact` shrinks the button (used for the second-level List/History toggle,
+// so it visibly reads as a smaller, nested control under the main Food/Medication
+// toggle). `subtle` swaps the active state from solid teal + white text to a grey
+// fill + dark text — a deliberately different look from the main toggle so the
+// two toggle levels aren't confusable at a glance for a senior user.
+function ToggleButton({ label, icon, active, onPress, compact, subtle }) {
   return (
     <TouchableOpacity
-      style={[styles.toggleBtn, active && styles.toggleBtnActive]}
+      style={[
+        styles.toggleBtn,
+        compact && styles.toggleBtnCompact,
+        active && (subtle ? styles.toggleBtnActiveSubtle : styles.toggleBtnActive),
+      ]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
     >
-      <Ionicons name={icon} size={18} color={active ? colors.white : colors.textSecondary} />
+      <Ionicons
+        name={icon}
+        size={compact ? 16 : 18}
+        color={active ? (subtle ? colors.text : colors.white) : colors.textSecondary}
+      />
       <Text
-        style={[styles.toggleText, active && styles.toggleTextActive]}
+        style={[
+          styles.toggleText,
+          compact && styles.toggleTextCompact,
+          active && (subtle ? styles.toggleTextActiveSubtle : styles.toggleTextActive),
+        ]}
         maxFontSizeMultiplier={MAX_FONT_MULT}
       >
         {label}
@@ -377,16 +394,20 @@ function MedicationTab({ navigation }) {
     <>
       <View style={styles.subToggle}>
         <ToggleButton
-          label="Medication List"
+          label="List"
           icon="list"
           active={subTab === 'List'}
           onPress={() => setSubTab('List')}
+          compact
+          subtle
         />
         <ToggleButton
-          label="Medication History"
+          label="History"
           icon="time"
           active={subTab === 'History'}
           onPress={() => setSubTab('History')}
+          compact
+          subtle
         />
       </View>
       {subTab === 'List' ? (
@@ -420,13 +441,17 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   toggleBtnActive: { backgroundColor: colors.primary },
+  toggleBtnCompact: { minHeight: MIN_TOUCH - 8 },
+  toggleBtnActiveSubtle: { backgroundColor: colors.border },
   toggleText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
   toggleTextActive: { color: colors.white },
+  toggleTextCompact: { fontSize: 15 },
+  toggleTextActiveSubtle: { color: colors.text },
   subToggle: {
     flexDirection: 'row',
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
-    backgroundColor: colors.card,
+    backgroundColor: colors.background,
     borderRadius: radius.md,
     padding: spacing.xs,
     gap: spacing.xs,
