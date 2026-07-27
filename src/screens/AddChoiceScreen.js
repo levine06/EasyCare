@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +29,10 @@ export default function AddChoiceScreen({ navigation }) {
         <SafeAreaView style={styles.safe} edges={['top']}>
           <ScreenHeader showBack />
 
-          <View style={styles.content}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+          >
             <ChoiceCard
               icon="restaurant"
               label="Log a meal"
@@ -40,7 +44,13 @@ export default function AddChoiceScreen({ navigation }) {
               label="Add a medication"
               onPress={() => navigation.navigate('AddMedication')}
             />
-          </View>
+
+            <ChoiceCard
+              icon="pricetag"
+              label="Add food tag"
+              onPress={() => navigation.navigate('ManageFoodTags')}
+            />
+          </ScrollView>
         </SafeAreaView>
       </View>
     </ImageBackground>
@@ -84,8 +94,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 
-  content: {
+  scroll: {
     flex: 1,
+  },
+
+  content: {
+    flexGrow: 1,
     padding: spacing.lg,
     gap: spacing.lg,
     justifyContent: 'center',

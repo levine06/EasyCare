@@ -1,8 +1,11 @@
 import { supabase } from '../../lib/supabaseClient';
 import { isDueOnDate, localDateKey } from '../utils/medicationFormat';
+import { File } from 'expo-file-system';
 
 // All Supabase access for the medication module lives here so screens stay dumb.
 // Tables (already created): `medications`, `medication_logs`. Single-user app, no auth.
+
+const PHOTO_BUCKET = 'medication-photos';
 
 // ---- medications CRUD ----------------------------------------------------
 
@@ -97,14 +100,37 @@ export async function getTodaysMedications() {
     }));
 }
 
-// Mark a medication as taken now (insert a log row). Returns the created log.
-export async function markTaken(medicationId) {
+// ---- photo upload -----------------------------------------------------
+
+// Uploads a local image URI (from expo-image-picker) to the medication-photos
+// bucket and returns its public URL for storing in `medication_logs.photo_url`.
+export async function uploadMedicationPhoto(localUri) {
+  const file = new File(localUri);
+  const arrayBuffer = await file.arrayBuffer();
+  const ext = file.extension?.replace('.', '') || 'jpg';
+  const path = `${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .upload(path, arrayBuffer, { contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}` });
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// ---- medication logs -------------------------------------------------------
+
+// Mark a medication as taken now (insert a log row). `photoUrl` is null when the
+// user skipped photo verification. Returns the created log.
+export async function markTaken(medicationId, photoUrl = null) {
   const { data, error } = await supabase
     .from('medication_logs')
     .insert({
       medication_id: medicationId,
       status: 'taken',
       taken_at: new Date().toISOString(),
+      photo_url: photoUrl,
     })
     .select()
     .single();
@@ -119,6 +145,30 @@ export async function unmarkTaken(logId) {
     .delete()
     .eq('id', logId);
   if (error) throw error;
+}
+
+// Replaces (or clears, if photoUrl is null) an existing log's photo without
+// touching taken_at. Used by History's "Edit photo" action.
+export async function updateMedicationLogPhoto(logId, photoUrl) {
+  const { data, error } = await supabase
+    .from('medication_logs')
+    .update({ photo_url: photoUrl })
+    .eq('id', logId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// All medication_logs, most-recent-first, each joined with its medication's
+// name/dosage for the Medication History tab.
+export async function listMedicationLogs() {
+  const { data, error } = await supabase
+    .from('medication_logs')
+    .select('*, medications(name, dosage)')
+    .order('taken_at', { ascending: false });
+  if (error) throw error;
+  return data;
 }
 
 // Exported for reminder scheduling convenience.

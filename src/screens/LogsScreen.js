@@ -15,12 +15,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import MedicationCard from '../components/MedicationCard';
+import MedicationHistoryCard from '../components/MedicationHistoryCard';
 import MealCard from '../components/MealCard';
 import EmptyState from '../components/EmptyState';
-import { listMedications, deactivateMedication } from '../api/medications';
+import { listMedications, deactivateMedication, listMedicationLogs, unmarkTaken } from '../api/medications';
 import { listMeals, deleteMeal } from '../api/meals';
 import { resyncAllReminders } from '../notifications/reminders';
-import { formatDateHeading } from '../utils/mealFormat';
+import { formatDateHeading, dateKeyFor } from '../utils/mealFormat';
 import { colors, spacing, radius, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 import { Platform } from 'react-native';
 
@@ -179,7 +180,7 @@ function groupMealsByDate(meals) {
   return Array.from(byDate.entries()).map(([date, data]) => ({ title: date, data }));
 }
 
-function MedicationTab({ navigation }) {
+function MedicationListView({ navigation }) {
   const [meds, setMeds] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -271,6 +272,132 @@ function MedicationTab({ navigation }) {
   );
 }
 
+// medication_logs.taken_at is a full timestamp; group by its local calendar day,
+// reusing mealFormat.js's date-key/heading helpers (they're generic over any
+// ISO timestamp despite the file's meal-specific name).
+function groupLogsByDate(logs) {
+  const byDate = new Map();
+  for (const log of logs) {
+    const key = dateKeyFor(new Date(log.taken_at));
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key).push(log);
+  }
+  return Array.from(byDate.entries()).map(([date, data]) => ({ title: date, data }));
+}
+
+function MedicationHistoryView({ navigation }) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await listMedicationLogs();
+      setLogs(data);
+    } catch (e) {
+      Alert.alert('Error', 'Could not load medication history.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const handleEdit = (log) => {
+    navigation.navigate('LogMedication', {
+      logId: log.id,
+      medicationName: log.medications?.name,
+      existingPhotoUrl: log.photo_url,
+    });
+  };
+
+  const handleDelete = (log) => {
+    Alert.alert(
+      'Remove this entry?',
+      'This will delete it from your medication history.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await unmarkTaken(log.id);
+              load();
+            } catch (e) {
+              Alert.alert('Error', 'Could not delete. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: spacing.xxl }} color={colors.primary} />;
+  }
+
+  if (logs.length === 0) {
+    return (
+      <EmptyState
+        icon="medkit-outline"
+        message="No medication history yet"
+        hint="Doses you mark as taken will show up here."
+      />
+    );
+  }
+
+  return (
+    <SectionList
+      sections={groupLogsByDate(logs)}
+      keyExtractor={(item) => String(item.id)}
+      contentContainerStyle={styles.foodList}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) => (
+        <Text style={styles.dateHeading} maxFontSizeMultiplier={MAX_FONT_MULT}>
+          {formatDateHeading(section.title)}
+        </Text>
+      )}
+      renderItem={({ item }) => (
+        <View style={styles.mealCardWrap}>
+          <MedicationHistoryCard log={item} onEdit={handleEdit} onDelete={handleDelete} />
+        </View>
+      )}
+    />
+  );
+}
+
+function MedicationTab({ navigation }) {
+  const [subTab, setSubTab] = useState('List');
+
+  return (
+    <>
+      <View style={styles.subToggle}>
+        <ToggleButton
+          label="Medication List"
+          icon="list"
+          active={subTab === 'List'}
+          onPress={() => setSubTab('List')}
+        />
+        <ToggleButton
+          label="Medication History"
+          icon="time"
+          active={subTab === 'History'}
+          onPress={() => setSubTab('History')}
+        />
+      </View>
+      {subTab === 'List' ? (
+        <MedicationListView navigation={navigation} />
+      ) : (
+        <MedicationHistoryView navigation={navigation} />
+      )}
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
   bg: { flex: 1 },
   safe: { flex: 1, backgroundColor: 'transparent' },
@@ -295,6 +422,15 @@ const styles = StyleSheet.create({
   toggleBtnActive: { backgroundColor: colors.primary },
   toggleText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
   toggleTextActive: { color: colors.white },
+  subToggle: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+    gap: spacing.xs,
+  },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   foodList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   dateHeading: {

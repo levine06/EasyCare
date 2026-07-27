@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,16 +24,37 @@ const PREVIEW_COUNT = 3;
 // checkbox) opens the edit screen.
 export default function TodaysMedicationList() {
   const navigation = useNavigation();
-  const { meds, loading, toggleTaken } = useTodaysMedications();
+  const { meds, loading, untakeMedication } = useTodaysMedications();
   const [expanded, setExpanded] = useState(false);
   const [busyId, setBusyId] = useState(null);
 
-  const handleToggle = async (med) => {
-    setBusyId(med.id);
-    try {
-      await toggleTaken(med);
-    } finally {
-      setBusyId(null);
+  const handleUntake = (med) => {
+    Alert.alert(
+      'Remove this entry?',
+      'This will delete it from your medication history.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setBusyId(med.id);
+            try {
+              await untakeMedication(med);
+            } finally {
+              setBusyId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleToggle = (med) => {
+    if (med.taken) {
+      handleUntake(med);
+    } else {
+      navigation.navigate('LogMedication', { medicationId: med.id, medicationName: med.name });
     }
   };
 

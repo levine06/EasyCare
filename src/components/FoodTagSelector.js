@@ -1,11 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, radius, MIN_TOUCH } from '../theme';
-
-export const FOOD_TAGS = ['Whole grains', 'Protein', 'Vegetables', 'Dairy', 'Fruits'];
+import { FOOD_TAGS } from '../constants/foodTags';
+import { listCustomTags } from '../api/customTags';
 
 // Multi-select chips for food group tags. `value` is an array of tag strings.
+// Renders the 5 built-in tags plus any user-created custom tags (fetched from
+// Supabase). Tag creation/editing/deletion happens on ManageFoodTagsScreen, not here.
 export default function FoodTagSelector({ value = [], onChange }) {
+  const [customTags, setCustomTags] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    listCustomTags()
+      .then((data) => active && setCustomTags(data))
+      .catch(() => active && setCustomTags([]));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const allTags = [...FOOD_TAGS, ...customTags.map((t) => t.name)];
+
   const toggle = (tag) => {
     if (value.includes(tag)) {
       onChange(value.filter((t) => t !== tag));
@@ -16,7 +32,7 @@ export default function FoodTagSelector({ value = [], onChange }) {
 
   return (
     <View style={styles.row}>
-      {FOOD_TAGS.map((tag) => {
+      {allTags.map((tag) => {
         const selected = value.includes(tag);
         return (
           <TouchableOpacity

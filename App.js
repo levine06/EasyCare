@@ -12,6 +12,8 @@ import LogsScreen from './src/screens/LogsScreen';
 import AddChoiceScreen from './src/screens/AddChoiceScreen';
 import AddMedicationScreen from './src/screens/AddMedicationScreen';
 import AddMealScreen from './src/screens/AddMealScreen';
+import ManageFoodTagsScreen from './src/screens/ManageFoodTagsScreen';
+import LogMedicationScreen from './src/screens/LogMedicationScreen';
 import { colors, radius } from './src/theme';
 import {
   configureNotifications,
@@ -99,6 +101,8 @@ export default function App() {
           <Stack.Screen name="AddChoice" component={AddChoiceScreen} />
           <Stack.Screen name="AddMedication" component={AddMedicationScreen} />
           <Stack.Screen name="AddMeal" component={AddMealScreen} />
+          <Stack.Screen name="ManageFoodTags" component={ManageFoodTagsScreen} />
+          <Stack.Screen name="LogMedication" component={LogMedicationScreen} />
         </Stack.Navigator>
       </NavigationContainer>
       <StatusBar style="dark" />

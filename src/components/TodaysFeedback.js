@@ -7,7 +7,7 @@ import EmptyState from './EmptyState';
 import { getTodaysMeals } from '../api/meals';
 import { useTodaysMedications } from '../hooks/useTodaysMedications';
 import { formatTime12h } from '../utils/medicationFormat';
-import { FOOD_TAGS } from './FoodTagSelector';
+import { FOOD_TAGS } from '../constants/foodTags';
 import { colors, spacing, radius, typography, MAX_FONT_MULT } from '../theme';
 
 const MAX_POSITIVE = 2;

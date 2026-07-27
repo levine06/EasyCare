@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTodaysMedications } from '../hooks/useTodaysMedications';
 import { formatTime12h } from '../utils/medicationFormat';
@@ -10,8 +11,8 @@ import { colors, spacing, radius, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '.
 // missed dose > next upcoming dose > "all caught up" > nothing (renders nothing) if
 // no medications are scheduled today at all.
 export default function NextMedicationHero() {
-  const { meds, loading, toggleTaken } = useTodaysMedications();
-  const [busy, setBusy] = useState(false);
+  const { meds, loading } = useTodaysMedications();
+  const navigation = useNavigation();
 
   if (loading || meds.length === 0) return null;
 
@@ -37,13 +38,11 @@ export default function NextMedicationHero() {
 
   const missed = next.missed;
 
-  const handlePress = async () => {
-    setBusy(true);
-    try {
-      await toggleTaken(next);
-    } finally {
-      setBusy(false);
-    }
+  const handlePress = () => {
+    navigation.navigate('LogMedication', {
+      medicationId: next.id,
+      medicationName: next.name,
+    });
   };
 
   return (
@@ -75,17 +74,12 @@ export default function NextMedicationHero() {
       <TouchableOpacity
         style={[styles.button, missed ? styles.warningButton : styles.primaryButton]}
         onPress={handlePress}
-        disabled={busy}
         accessibilityRole="button"
         accessibilityLabel={`Mark ${next.name} as taken`}
       >
-        {busy ? (
-          <ActivityIndicator color={colors.white} />
-        ) : (
-          <Text style={styles.buttonText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-            Mark as Taken
-          </Text>
-        )}
+        <Text style={styles.buttonText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+          Mark as Taken
+        </Text>
       </TouchableOpacity>
     </View>
   );

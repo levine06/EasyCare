@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { getTodaysMedications, markTaken, unmarkTaken } from '../api/medications';
+import { getTodaysMedications, unmarkTaken } from '../api/medications';
 import { annotateAndSortMedications } from '../utils/medicationFormat';
 
 // Single shared fetch of today's medications for the whole Home tab, so marking a
@@ -29,14 +29,13 @@ export function TodaysMedicationsProvider({ children }) {
     }, [load])
   );
 
-  const toggleTaken = useCallback(
+  // Deletes today's taken log for this medication (the Home checkbox's uncheck
+  // path). Marking taken now happens via navigation to LogMedicationScreen
+  // instead of a direct call here — see TodaysMedicationList.js.
+  const untakeMedication = useCallback(
     async (med) => {
       try {
-        if (med.taken) {
-          if (med.takenLogId) await unmarkTaken(med.takenLogId);
-        } else {
-          await markTaken(med.id);
-        }
+        if (med.takenLogId) await unmarkTaken(med.takenLogId);
         await load();
       } catch (e) {
         // leave the list as-is on error
@@ -46,7 +45,7 @@ export function TodaysMedicationsProvider({ children }) {
   );
 
   return (
-    <TodaysMedicationsContext.Provider value={{ meds, loading, toggleTaken }}>
+    <TodaysMedicationsContext.Provider value={{ meds, loading, untakeMedication }}>
       {children}
     </TodaysMedicationsContext.Provider>
   );

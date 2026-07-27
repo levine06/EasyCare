@@ -44,3 +44,4 @@ yarn-error.*
 # editor / tool-local state
 .vscode/
 .claude/
+.superpowers/
