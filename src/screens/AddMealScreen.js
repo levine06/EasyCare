@@ -26,6 +26,7 @@ import {
   uploadMealPhoto,
 } from '../api/meals';
 import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
+import { useTimeOfDayBackground } from '../hooks/useTimeOfDayBackground';
 
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
@@ -34,6 +35,7 @@ const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 export default function AddMealScreen({ navigation, route }) {
   const mealId = route.params?.mealId ?? null;
   const isEdit = mealId != null;
+  const { background } = useTimeOfDayBackground();
 
   const [mealType, setMealType] = useState('Breakfast');
   const [photoUrl, setPhotoUrl] = useState(null);
@@ -174,7 +176,7 @@ export default function AddMealScreen({ navigation, route }) {
   if (loading) {
     return (
       <ImageBackground
-        source={require('../../assets/health_bg.png')}
+        source={background}
         style={styles.bg}
         resizeMode="cover"
       >
@@ -190,7 +192,7 @@ export default function AddMealScreen({ navigation, route }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/health_bg.png')}
+      source={background}
       style={styles.bg}
       resizeMode="cover"
     >

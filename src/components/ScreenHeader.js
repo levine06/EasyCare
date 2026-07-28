@@ -14,9 +14,11 @@ import {
   typography,
   MIN_TOUCH,
 } from '../theme';
+import { useTimeOfDayBackground } from '../hooks/useTimeOfDayBackground';
 
 export default function ScreenHeader({ title, showBack = false }) {
   const navigation = useNavigation();
+  const { useLightText } = useTimeOfDayBackground();
 
   return (
     <View style={styles.wrap}>
@@ -32,7 +34,7 @@ export default function ScreenHeader({ title, showBack = false }) {
             <Ionicons
               name="arrow-back"
               size={28}
-              color={colors.primary}
+              color={useLightText ? '#FFFFFF' : colors.primary}
             />
           </TouchableOpacity>
         )}
@@ -42,13 +44,13 @@ export default function ScreenHeader({ title, showBack = false }) {
           style={styles.logo}
         />
 
-        <Text style={styles.brand}>
+        <Text style={[styles.brand, useLightText && styles.brandNight]}>
           EasyCare
         </Text>
       </View>
 
       {title ? (
-        <Text style={styles.title}>
+        <Text style={[styles.title, useLightText && styles.titleNight]}>
           {title}
         </Text>
       ) : null}
@@ -88,8 +90,16 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
+  brandNight: {
+    color: '#FFFFFF',
+  },
+
   title: {
     ...typography.title,
     marginTop: spacing.sm,
+  },
+
+  titleNight: {
+    color: '#FFFFFF',
   },
 });

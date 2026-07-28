@@ -33,8 +33,10 @@ import {
   MIN_TOUCH,
   MAX_FONT_MULT,
 } from '../theme';
+import { useTimeOfDayBackground } from '../hooks/useTimeOfDayBackground';
 
 export default function ManageFoodTagsScreen() {
+  const { background, useLightText } = useTimeOfDayBackground();
   const [customTags, setCustomTags] = useState(null);
   const [newTagText, setNewTagText] = useState('');
   const [adding, setAdding] = useState(false);
@@ -110,7 +112,7 @@ export default function ManageFoodTagsScreen() {
 
   return (
     <ImageBackground
-      source={require('../../assets/health_bg.png')}
+      source={background}
       style={styles.bg}
       resizeMode="cover"
     >
@@ -121,7 +123,7 @@ export default function ManageFoodTagsScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
+            <Text style={[styles.sectionLabel, useLightText && styles.sectionLabelNight]} maxFontSizeMultiplier={MAX_FONT_MULT}>
               Default tags
             </Text>
             <View style={styles.card}>
@@ -134,7 +136,7 @@ export default function ManageFoodTagsScreen() {
               ))}
             </View>
 
-            <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
+            <Text style={[styles.sectionLabel, useLightText && styles.sectionLabelNight]} maxFontSizeMultiplier={MAX_FONT_MULT}>
               Custom tags
             </Text>
             <View style={styles.card}>
@@ -207,7 +209,7 @@ export default function ManageFoodTagsScreen() {
               )}
             </View>
 
-            <Text style={styles.sectionLabel} maxFontSizeMultiplier={MAX_FONT_MULT}>
+            <Text style={[styles.sectionLabel, useLightText && styles.sectionLabelNight]} maxFontSizeMultiplier={MAX_FONT_MULT}>
               Add a tag
             </Text>
             <View style={styles.addRow}>
@@ -249,6 +251,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   sectionLabel: { ...typography.sectionLabel, marginTop: spacing.md },
+  sectionLabelNight: { color: '#FFFFFF' },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,

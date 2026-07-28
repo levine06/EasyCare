@@ -17,11 +17,14 @@ import {
   typography,
   MIN_TOUCH,
 } from '../theme';
+import { useTimeOfDayBackground } from '../hooks/useTimeOfDayBackground';
 
 export default function AddChoiceScreen({ navigation }) {
+  const { background } = useTimeOfDayBackground();
+
   return (
     <ImageBackground
-      source={require('../../assets/health_bg.png')}
+      source={background}
       style={styles.background}
       resizeMode="cover"
     >
@@ -86,7 +89,6 @@ const styles = StyleSheet.create({
 
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
   },
 
   safe: {

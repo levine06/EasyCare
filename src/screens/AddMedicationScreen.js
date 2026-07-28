@@ -26,6 +26,7 @@ import {
 import { resyncAllReminders } from '../notifications/reminders';
 import { daysToFrequency, frequencyToDays } from '../utils/medicationFormat';
 import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
+import { useTimeOfDayBackground } from '../hooks/useTimeOfDayBackground';
 
 const DOSAGE_UNITS = [
   'tablet',
@@ -51,6 +52,7 @@ const DOSAGE_UNITS = [
 export default function AddMedicationScreen({ navigation, route }) {
   const medicationId = route.params?.medicationId ?? null;
   const isEdit = medicationId != null;
+  const { background } = useTimeOfDayBackground();
 
   const [name, setName] = useState('');
   const [dosageNumber, setDosageNumber] = useState('1');
@@ -149,7 +151,7 @@ export default function AddMedicationScreen({ navigation, route }) {
   if (loading) {
     return (
       <ImageBackground
-        source={require('../../assets/health_bg.png')}
+        source={background}
         style={styles.bg}
         resizeMode="cover"
       >
@@ -163,7 +165,7 @@ export default function AddMedicationScreen({ navigation, route }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/health_bg.png')}
+      source={background}
       style={styles.bg}
       resizeMode="cover"
     >
@@ -182,8 +184,9 @@ export default function AddMedicationScreen({ navigation, route }) {
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter medication name"
-                placeholderTextColor={colors.textSecondary}
+                placeholder="Add a medication"
+                placeholderTextColor={colors.placeholderText}
+                autoFocus
                 maxFontSizeMultiplier={MAX_FONT_MULT}
               />
 
@@ -268,6 +271,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
+    outlineStyle: 'none',
     ...typography.body,
   },
   dosageInput: {

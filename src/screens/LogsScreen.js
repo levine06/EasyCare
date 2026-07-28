@@ -24,12 +24,14 @@ import { resyncAllReminders } from '../notifications/reminders';
 import { formatDateHeading, dateKeyFor } from '../utils/mealFormat';
 import { colors, spacing, radius, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 import { Platform } from 'react-native';
+import { useTimeOfDayBackground } from '../hooks/useTimeOfDayBackground';
 
 // Logs screen with a Food | Medication segmented toggle. Both tabs are fully
 // implemented: Food (meals) and Medication. Accepts an optional route param
 // `tab` ("Food" | "Medication") so Home's section chevrons can deep-link here.
 export default function LogsScreen({ navigation, route }) {
   const [tab, setTab] = useState(route.params?.tab ?? 'Food');
+  const { background, useLightText, isMorning } = useTimeOfDayBackground();
 
   useFocusEffect(
     useCallback(() => {
@@ -39,7 +41,7 @@ export default function LogsScreen({ navigation, route }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/health_bg.png')}
+      source={background}
       style={styles.bg}
       resizeMode="cover"
     >
@@ -61,9 +63,9 @@ export default function LogsScreen({ navigation, route }) {
         </View>
 
         {tab === 'Food' ? (
-          <FoodTab navigation={navigation} />
+          <FoodTab navigation={navigation} useLightText={useLightText} isMorning={isMorning} />
         ) : (
-          <MedicationTab navigation={navigation} />
+          <MedicationTab navigation={navigation} useLightText={useLightText} isMorning={isMorning} />
         )}
       </SafeAreaView>
     </ImageBackground>
@@ -106,7 +108,7 @@ function ToggleButton({ label, icon, active, onPress, compact, subtle }) {
   );
 }
 
-function FoodTab({ navigation }) {
+function FoodTab({ navigation, useLightText, isMorning }) {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -156,6 +158,7 @@ function FoodTab({ navigation }) {
         icon="restaurant-outline"
         message="No meals logged yet"
         hint="Tap the + button to log your first meal."
+        light={useLightText}
       />
     );
   }
@@ -167,7 +170,7 @@ function FoodTab({ navigation }) {
       contentContainerStyle={styles.foodList}
       stickySectionHeadersEnabled={false}
       renderSectionHeader={({ section }) => (
-        <Text style={styles.dateHeading} maxFontSizeMultiplier={MAX_FONT_MULT}>
+        <Text style={[styles.dateHeading, isMorning && styles.dateHeadingMorning, useLightText && styles.dateHeadingNight]} maxFontSizeMultiplier={MAX_FONT_MULT}>
           {formatDateHeading(section.title)}
         </Text>
       )}
@@ -197,7 +200,7 @@ function groupMealsByDate(meals) {
   return Array.from(byDate.entries()).map(([date, data]) => ({ title: date, data }));
 }
 
-function MedicationListView({ navigation }) {
+function MedicationListView({ navigation, useLightText }) {
   const [meds, setMeds] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -269,6 +272,7 @@ function MedicationListView({ navigation }) {
         icon="medkit-outline"
         message="No medications yet"
         hint="Tap the + button to add your first medication."
+        light={useLightText}
       />
     );
   }
@@ -302,7 +306,7 @@ function groupLogsByDate(logs) {
   return Array.from(byDate.entries()).map(([date, data]) => ({ title: date, data }));
 }
 
-function MedicationHistoryView({ navigation }) {
+function MedicationHistoryView({ navigation, useLightText, isMorning }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -363,6 +367,7 @@ function MedicationHistoryView({ navigation }) {
         icon="medkit-outline"
         message="No medication history yet"
         hint="Doses you mark as taken will show up here."
+        light={useLightText}
       />
     );
   }
@@ -374,7 +379,7 @@ function MedicationHistoryView({ navigation }) {
       contentContainerStyle={styles.foodList}
       stickySectionHeadersEnabled={false}
       renderSectionHeader={({ section }) => (
-        <Text style={styles.dateHeading} maxFontSizeMultiplier={MAX_FONT_MULT}>
+        <Text style={[styles.dateHeading, isMorning && styles.dateHeadingMorning, useLightText && styles.dateHeadingNight]} maxFontSizeMultiplier={MAX_FONT_MULT}>
           {formatDateHeading(section.title)}
         </Text>
       )}
@@ -387,7 +392,7 @@ function MedicationHistoryView({ navigation }) {
   );
 }
 
-function MedicationTab({ navigation }) {
+function MedicationTab({ navigation, useLightText, isMorning }) {
   const [subTab, setSubTab] = useState('List');
 
   return (
@@ -411,9 +416,9 @@ function MedicationTab({ navigation }) {
         />
       </View>
       {subTab === 'List' ? (
-        <MedicationListView navigation={navigation} />
+        <MedicationListView navigation={navigation} useLightText={useLightText} />
       ) : (
-        <MedicationHistoryView navigation={navigation} />
+        <MedicationHistoryView navigation={navigation} useLightText={useLightText} isMorning={isMorning} />
       )}
     </>
   );
@@ -464,6 +469,12 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
+  },
+  dateHeadingMorning: {
+    color: '#000000',
+  },
+  dateHeadingNight: {
+    color: '#FFFFFF',
   },
   mealCardWrap: { marginBottom: spacing.md },
 });

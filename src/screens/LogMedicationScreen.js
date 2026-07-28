@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import { uploadMedicationPhoto, markTaken, updateMedicationLogPhoto } from '../api/medications';
 import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
+import { useTimeOfDayBackground } from '../hooks/useTimeOfDayBackground';
 
 // Gate screen shown before a medication can be marked taken: take/upload a photo
 // of the medication, or just tap "Log medication" with no photo — a photo is
@@ -29,6 +30,7 @@ import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MU
 export default function LogMedicationScreen({ navigation, route }) {
   const { medicationId, medicationName, logId, existingPhotoUrl } = route.params ?? {};
   const isEdit = logId != null;
+  const { background } = useTimeOfDayBackground();
 
   const [photoUrl, setPhotoUrl] = useState(isEdit ? existingPhotoUrl ?? null : null);
   const [localPhotoUri, setLocalPhotoUri] = useState(null);
@@ -150,7 +152,7 @@ export default function LogMedicationScreen({ navigation, route }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/health_bg.png')}
+      source={background}
       style={styles.bg}
       resizeMode="cover"
     >

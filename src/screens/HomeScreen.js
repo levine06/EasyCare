@@ -15,24 +15,20 @@ import TodaysMedicationList from '../components/TodaysMedicationList';
 import TodaysMealsRow from '../components/TodaysMealsRow';
 import TodaysFeedback from '../components/TodaysFeedback';
 import { TodaysMedicationsProvider } from '../hooks/useTodaysMedications';
+import { useTimeOfDayBackground } from '../hooks/useTimeOfDayBackground';
 
 import { spacing } from '../theme';
 
 export default function HomeScreen() {
-  const hour = new Date().getHours();
+  const { background, useLightText, isAfternoon, hour } = useTimeOfDayBackground();
 
   let greeting = '';
-  let background;
-
   if (hour < 12) {
-    greeting = 'Good Morning ';
-    background = require('../../assets/morning.png');
+    greeting = 'Good Morning ☀️';
   } else if (hour < 18) {
     greeting = 'Good Afternoon 🌤️';
-    background = require('../../assets/afternoon.png');
   } else {
-    greeting = 'Good Evening ';
-    background = require('../../assets/night.png');
+    greeting = 'Good Evening 🌙';
   }
 
   return (
@@ -42,7 +38,6 @@ export default function HomeScreen() {
       imageStyle={styles.backgroundImage}
       resizeMode="cover"
     >
-      {/* Light overlay so the illustration is still visible */}
       <View style={styles.overlay}>
         <SafeAreaView style={styles.safe} edges={['top']}>
           <ScreenHeader />
@@ -52,11 +47,17 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.greetingContainer}>
-              <Text style={styles.greetingTitle}>
+              <Text style={[styles.greetingTitle, useLightText && styles.greetingTitleNight]}>
                 {greeting}
               </Text>
 
-              <Text style={styles.greetingSubtitle}>
+              <Text
+                style={[
+                  styles.greetingSubtitle,
+                  useLightText && styles.greetingSubtitleNight,
+                  isAfternoon && styles.greetingSubtitleAfternoon,
+                ]}
+              >
                 Stay on track with your health today.
               </Text>
             </View>
@@ -93,7 +94,6 @@ const styles = StyleSheet.create({
 
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.32)',
   },
 
   safe: {
@@ -119,13 +119,22 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
 
+  greetingTitleNight: {
+    color: '#FFFFFF',
+  },
+
   greetingSubtitle: {
     marginTop: 6,
     fontSize: 16,
     fontWeight: '600',
     color: '#374151',
-    textShadowColor: 'rgba(255,255,255,0.9)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+  },
+
+  greetingSubtitleNight: {
+    color: '#FFFFFF',
+  },
+
+  greetingSubtitleAfternoon: {
+    color: '#E5E7EB',
   },
 });
