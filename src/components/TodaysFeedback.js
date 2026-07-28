@@ -7,7 +7,7 @@ import EmptyState from './EmptyState';
 import { getTodaysMeals } from '../api/meals';
 import { useTodaysMedications } from '../hooks/useTodaysMedications';
 import { formatTime12h } from '../utils/medicationFormat';
-import { FOOD_TAGS } from '../constants/foodTags';
+import { FOOD_TAGS, FOOD_TAG_RATIONALE } from '../constants/foodTags';
 import { colors, spacing, radius, typography, MAX_FONT_MULT } from '../theme';
 
 const MAX_POSITIVE = 2;
@@ -56,9 +56,16 @@ export default function TodaysFeedback() {
                 color={row.positive ? colors.success : colors.warning}
               />
             </View>
-            <Text style={styles.rowText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-              {row.text}
-            </Text>
+            <View style={styles.rowTextWrap}>
+              <Text style={styles.rowText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                {row.title}
+              </Text>
+              {row.subtitle ? (
+                <Text style={styles.rowSubtext} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                  {row.subtitle}
+                </Text>
+              ) : null}
+            </View>
           </View>
         ))
       )}
@@ -80,10 +87,20 @@ function buildFeedbackRows(meals, missedMeds) {
     const missing = FOOD_TAGS.filter((t) => !coveredTags.has(t));
 
     for (const tag of covered.slice(0, MAX_POSITIVE)) {
-      rows.push({ positive: true, icon: 'thumbs-up', text: `Good job including ${tag.toLowerCase()}.` });
+      rows.push({
+        positive: true,
+        icon: 'thumbs-up',
+        title: `Good job including ${tag.toLowerCase()}.`,
+        subtitle: FOOD_TAG_RATIONALE[tag],
+      });
     }
     for (const tag of missing.slice(0, MAX_SUGGESTIONS)) {
-      rows.push({ positive: false, icon: 'leaf-outline', text: `Try to include some ${tag.toLowerCase()} today.` });
+      rows.push({
+        positive: false,
+        icon: 'leaf-outline',
+        title: `Try to include some ${tag.toLowerCase()} today.`,
+        subtitle: FOOD_TAG_RATIONALE[tag],
+      });
     }
   }
 
@@ -92,13 +109,13 @@ function buildFeedbackRows(meals, missedMeds) {
     rows.push({
       positive: false,
       icon: 'alert-circle-outline',
-      text: `You missed your ${formatTime12h(med.reminder_time)} ${med.name}.`,
+      title: `You missed your ${formatTime12h(med.reminder_time)} ${med.name}.`,
     });
   } else if (missedMeds.length > 1) {
     rows.push({
       positive: false,
       icon: 'alert-circle-outline',
-      text: `You missed ${missedMeds.length} medications today.`,
+      title: `You missed ${missedMeds.length} medications today.`,
     });
   }
 
@@ -125,5 +142,7 @@ const styles = StyleSheet.create({
   },
   iconCirclePositive: { backgroundColor: colors.successBg },
   iconCircleWarning: { backgroundColor: colors.warningBg },
-  rowText: { ...typography.body, flex: 1 },
+  rowTextWrap: { flex: 1, minWidth: 0, paddingRight: spacing.sm },
+  rowText: { ...typography.body },
+  rowSubtext: { ...typography.caption, marginTop: 2 },
 });

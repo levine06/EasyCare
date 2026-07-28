@@ -271,7 +271,7 @@ export default function AddMealScreen({ navigation, route }) {
               accessibilityRole="button"
             >
               <Text style={styles.saveBtnText} maxFontSizeMultiplier={MAX_FONT_MULT}>
-                {isEdit ? 'Save changes' : 'Save meal'}
+                {isEdit ? 'Save changes' : 'Add meal'}
               </Text>
             </TouchableOpacity>
 

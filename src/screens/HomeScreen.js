@@ -122,6 +122,10 @@ const styles = StyleSheet.create({
   greetingSubtitle: {
     marginTop: 6,
     fontSize: 16,
-    color: '#4B5563',
+    fontWeight: '600',
+    color: '#374151',
+    textShadowColor: 'rgba(255,255,255,0.9)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
