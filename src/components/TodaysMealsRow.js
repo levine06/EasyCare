@@ -1,0 +1,113 @@
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { getTodaysMeals } from '../api/meals';
+import { colors, spacing, radius, typography } from '../theme';
+
+const THUMB_SIZE = 84;
+
+// Home-page "Today's Meals" card: horizontal scroll of today's logged meals (photo +
+// meal type), plus a grey + tile to log a new one. Tapping an existing meal opens
+// the edit screen; tapping + opens the add screen.
+export default function TodaysMealsRow() {
+  const navigation = useNavigation();
+  const [meals, setMeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getTodaysMeals()
+        .then((data) => active && setMeals(data))
+        .catch(() => active && setMeals([]))
+        .finally(() => active && setLoading(false));
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <Ionicons name="restaurant" size={18} color={colors.white} />
+        <Text style={styles.headerText}>Today's Meals</Text>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator style={{ padding: spacing.lg }} color={colors.primary} />
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.row}
+        >
+          {meals.map((meal) => (
+            <TouchableOpacity
+              key={meal.id}
+              style={styles.mealTile}
+              onPress={() => navigation.navigate('AddMeal', { mealId: meal.id })}
+              activeOpacity={0.8}
+            >
+              {meal.photo_url ? (
+                <Image source={{ uri: meal.photo_url }} style={styles.thumb} />
+              ) : (
+                <View style={[styles.thumb, styles.thumbPlaceholder]}>
+                  <Ionicons name="restaurant-outline" size={26} color={colors.textSecondary} />
+                </View>
+              )}
+              <Text style={styles.mealLabel} numberOfLines={1}>
+                {meal.meal_type}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <TouchableOpacity
+            style={styles.addTile}
+            onPress={() => navigation.navigate('AddMeal')}
+            accessibilityRole="button"
+            accessibilityLabel="Log a meal"
+          >
+            <Ionicons name="add" size={30} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { backgroundColor: colors.card, borderRadius: radius.md, overflow: 'hidden' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  headerText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  row: { flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  mealTile: { alignItems: 'center', gap: spacing.xs, width: THUMB_SIZE },
+  thumb: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: radius.md, backgroundColor: colors.border },
+  thumbPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  mealLabel: { ...typography.small, fontSize: 14, textAlign: 'center' },
+  addTile: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+});
