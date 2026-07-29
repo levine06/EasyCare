@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  SectionList,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
@@ -14,15 +15,24 @@ import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import MedicationCard from '../components/MedicationCard';
 import MealCard from '../components/MealCard';
+import EmptyState from '../components/EmptyState';
 import { listMedications, deactivateMedication } from '../api/medications';
 import { listMeals, deleteMeal } from '../api/meals';
 import { resyncAllReminders } from '../notifications/reminders';
-import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
+import { formatDateHeading } from '../utils/mealFormat';
+import { colors, spacing, radius, typography, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
 // Logs screen with a Food | Medication segmented toggle. Both tabs are fully
-// implemented: Food (meals) and Medication.
-export default function LogsScreen({ navigation }) {
-  const [tab, setTab] = useState('Food');
+// implemented: Food (meals) and Medication. Accepts an optional route param
+// `tab` ("Food" | "Medication") so Home's section chevrons can deep-link here.
+export default function LogsScreen({ navigation, route }) {
+  const [tab, setTab] = useState(route.params?.tab ?? 'Food');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.tab) setTab(route.params.tab);
+    }, [route.params?.tab])
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -60,7 +70,12 @@ function ToggleButton({ label, icon, active, onPress }) {
       accessibilityState={{ selected: active }}
     >
       <Ionicons name={icon} size={18} color={active ? colors.white : colors.textSecondary} />
-      <Text style={[styles.toggleText, active && styles.toggleTextActive]}>{label}</Text>
+      <Text
+        style={[styles.toggleText, active && styles.toggleTextActive]}
+        maxFontSizeMultiplier={MAX_FONT_MULT}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -111,26 +126,49 @@ function FoodTab({ navigation }) {
 
   if (meals.length === 0) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.stubText}>No meals logged yet. Tap + to log one.</Text>
-      </View>
+      <EmptyState
+        icon="restaurant-outline"
+        message="No meals logged yet"
+        hint="Tap the + button to log your first meal."
+      />
     );
   }
 
   return (
-    <FlatList
-      data={meals}
+    <SectionList
+      sections={groupMealsByDate(meals)}
       keyExtractor={(item) => String(item.id)}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={styles.foodList}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) => (
+        <Text style={styles.dateHeading} maxFontSizeMultiplier={MAX_FONT_MULT}>
+          {formatDateHeading(section.title)}
+        </Text>
+      )}
       renderItem={({ item }) => (
-        <MealCard
-          meal={item}
-          onEdit={(meal) => navigation.navigate('AddMeal', { mealId: meal.id })}
-          onDelete={handleDelete}
-        />
+        <View style={styles.mealCardWrap}>
+          <MealCard
+            meal={item}
+            onEdit={(meal) => navigation.navigate('AddMeal', { mealId: meal.id })}
+            onDelete={handleDelete}
+          />
+        </View>
       )}
     />
   );
+}
+
+// Meals are already ordered most-recent-first (by created_at); grouping by
+// meal_date while preserving that order keeps both dates and meals within each
+// date sorted from most to least recent.
+function groupMealsByDate(meals) {
+  const byDate = new Map();
+  for (const meal of meals) {
+    const key = meal.meal_date;
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key).push(meal);
+  }
+  return Array.from(byDate.entries()).map(([date, data]) => ({ title: date, data }));
 }
 
 function MedicationTab({ navigation }) {
@@ -184,9 +222,11 @@ function MedicationTab({ navigation }) {
 
   if (meds.length === 0) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.stubText}>No medications yet. Tap + to add one.</Text>
-      </View>
+      <EmptyState
+        icon="medkit-outline"
+        message="No medications yet"
+        hint="Tap the + button to add your first medication."
+      />
     );
   }
 
@@ -232,6 +272,13 @@ const styles = StyleSheet.create({
   toggleTextActive: { color: colors.white },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   listHeader: { ...typography.bodySecondary, marginBottom: spacing.xs },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  stubText: { ...typography.bodySecondary, textAlign: 'center' },
+  foodList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  dateHeading: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  mealCardWrap: { marginBottom: spacing.md },
 });

@@ -8,17 +8,21 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import SectionCard from './SectionCard';
+import EmptyState from './EmptyState';
 import {
   getTodaysMedications,
   markTaken,
   unmarkTaken,
 } from '../api/medications';
-import { formatTime12h } from '../utils/medicationFormat';
-import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
+import { formatTime12h, reminderTimeOnDate } from '../utils/medicationFormat';
+import { colors, spacing, radius, typography, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
-// Home-page "Today's Medication" card. Shows time · name · dosage · checkbox rows;
-// taken items sort to the bottom; only 3 shown until "View more". Tapping a row
-// (outside the checkbox) opens the edit screen. Exported for Person 3's dashboard.
+// Home-page "Today's Medication" card. Untaken medications show first (up to 3);
+// taken ones are always tucked behind "View more", even if fewer than 3 are shown,
+// so the default view stays focused on what's still left to do today. Missed doses
+// (due time passed, not taken) get a red "Missed" badge. Tapping a row (outside the
+// checkbox) opens the edit screen.
 export default function TodaysMedicationList() {
   const navigation = useNavigation();
   const [meds, setMeds] = useState([]);
@@ -29,7 +33,7 @@ export default function TodaysMedicationList() {
   const load = useCallback(async () => {
     try {
       const data = await getTodaysMedications();
-      setMeds(sortForDisplay(data));
+      setMeds(annotateAndSort(data));
     } catch (e) {
       setMeds([]);
     } finally {
@@ -59,21 +63,26 @@ export default function TodaysMedicationList() {
     }
   };
 
-  const visible = expanded ? meds : meds.slice(0, 3);
+  const untaken = meds.filter((m) => !m.taken);
+  const taken = meds.filter((m) => m.taken);
+  const hasHidden = untaken.length > 3 || taken.length > 0;
+  const visible = expanded ? [...untaken, ...taken] : untaken.slice(0, 3);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <Ionicons name="medkit" size={18} color={colors.white} />
-        <Text style={styles.headerText}>Today's Medication</Text>
-      </View>
-
+    <SectionCard
+      icon="medkit"
+      title="Today's Medication"
+      onPressChevron={() => navigation.navigate('Tabs', { screen: 'Logs', params: { tab: 'Medication' } })}
+    >
       {loading ? (
         <ActivityIndicator style={{ padding: spacing.lg }} color={colors.primary} />
       ) : meds.length === 0 ? (
-        <Text style={styles.empty}>Nothing scheduled for today.</Text>
+        <EmptyState icon="checkmark-circle-outline" message="Nothing scheduled for today" />
       ) : (
         <>
+          {visible.length === 0 && (
+            <EmptyState icon="checkmark-circle-outline" message="All medications taken for today" />
+          )}
           {visible.map((med) => (
             <MedRow
               key={med.id}
@@ -85,19 +94,19 @@ export default function TodaysMedicationList() {
               }
             />
           ))}
-          {meds.length > 3 && (
+          {hasHidden && (
             <TouchableOpacity
               style={styles.viewMore}
               onPress={() => setExpanded((v) => !v)}
             >
-              <Text style={styles.viewMoreText}>
+              <Text style={styles.viewMoreText} maxFontSizeMultiplier={MAX_FONT_MULT}>
                 {expanded ? 'View less' : 'View more'}
               </Text>
             </TouchableOpacity>
           )}
         </>
       )}
-    </View>
+    </SectionCard>
   );
 }
 
@@ -105,14 +114,29 @@ function MedRow({ med, busy, onToggle, onOpen }) {
   return (
     <View style={styles.row}>
       <TouchableOpacity style={styles.rowMain} onPress={onOpen} activeOpacity={0.7}>
-        <View style={styles.timeCol}>
-          <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.time}>{formatTime12h(med.reminder_time)}</Text>
-        </View>
-        <Text style={[styles.name, med.taken && styles.nameTaken]} numberOfLines={1}>
+        <Text
+          style={[styles.name, med.taken && styles.nameTaken]}
+          numberOfLines={2}
+          maxFontSizeMultiplier={MAX_FONT_MULT}
+        >
           {med.name}
         </Text>
-        <Text style={styles.dosage}>{med.dosage}</Text>
+        <View style={styles.metaRow}>
+          <Ionicons name="time-outline" size={15} color={colors.textSecondary} />
+          <Text style={styles.meta} maxFontSizeMultiplier={MAX_FONT_MULT}>
+            {formatTime12h(med.reminder_time)} · {med.dosage}
+          </Text>
+          {med.missed && (
+            <View style={styles.missedBadge}>
+              <View style={styles.missedIconCircle}>
+                <Ionicons name="alert" size={13} color={colors.warning} />
+              </View>
+              <Text style={styles.missedText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+                Missed
+              </Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -124,62 +148,61 @@ function MedRow({ med, busy, onToggle, onOpen }) {
         accessibilityLabel={`Mark ${med.name} as taken`}
         hitSlop={8}
       >
-        {med.taken && <Ionicons name="checkmark" size={18} color={colors.white} />}
+        {med.taken && <Ionicons name="checkmark" size={22} color={colors.white} />}
       </TouchableOpacity>
     </View>
   );
 }
 
-// Untaken first (by reminder time), taken sink to the bottom.
-function sortForDisplay(meds) {
-  return [...meds].sort((a, b) => {
+// Adds a `missed` flag (due time passed, not taken) to each medication, then sorts
+// untaken-first by reminder time, taken sunk to the bottom.
+function annotateAndSort(meds) {
+  const now = new Date();
+  const annotated = meds.map((m) => ({
+    ...m,
+    missed: !m.taken && Boolean(m.reminder_time) && reminderTimeOnDate(m.reminder_time) < now,
+  }));
+  return annotated.sort((a, b) => {
     if (a.taken !== b.taken) return a.taken ? 1 : -1;
     return (a.reminder_time || '').localeCompare(b.reminder_time || '');
   });
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerText: { color: colors.white, fontSize: 16, fontWeight: '700' },
-  empty: { ...typography.bodySecondary, padding: spacing.lg },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    minHeight: MIN_TOUCH + 4,
+    minHeight: MIN_TOUCH + 12,
   },
-  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  timeCol: { flexDirection: 'row', alignItems: 'center', gap: 2, width: 78 },
-  time: { ...typography.bodySecondary, fontSize: 14 },
-  name: { ...typography.body, flex: 1, fontWeight: '600' },
+  rowMain: { flex: 1, gap: spacing.xs, marginRight: spacing.md },
+  name: { ...typography.body, fontWeight: '700' },
   nameTaken: { color: colors.textSecondary, textDecorationLine: 'line-through' },
-  dosage: { ...typography.small },
+  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
+  meta: { ...typography.small },
+  missedBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: spacing.xs },
+  missedIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.pill,
+    backgroundColor: colors.warningBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  missedText: { fontSize: 14, fontWeight: '700', color: colors.warning },
   checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.sm,
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm + 2,
     borderWidth: 2,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing.md,
   },
   checkboxChecked: { backgroundColor: colors.success, borderColor: colors.success },
   viewMore: { alignItems: 'center', paddingVertical: spacing.md },
-  viewMoreText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  viewMoreText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
 });

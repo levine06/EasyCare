@@ -1,42 +1,22 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, radius, typography, MIN_TOUCH } from '../theme';
-import { formatTime12h } from '../utils/medicationFormat';
+import ActionSheetMenu from './ActionSheetMenu';
+import { colors, spacing, radius, typography, cardShadow, MIN_TOUCH, MAX_FONT_MULT } from '../theme';
 
-// Logs-tab card: name + dosage, time, frequency, added-on date, and a 3-dot menu
-// with Edit / Delete. Matches the medication logs mockup.
+// Logs-tab card: name + 3-dot menu on top, then dosage/time/frequency as wrapping
+// info pills so long frequency strings ("Mon, Wed, Fri") never break mid-word, and
+// an added-on date footer. Matches the medication logs mockup.
 export default function MedicationCard({ medication, onEdit, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const addedOn = formatAddedOn(medication.created_at);
 
   return (
     <View style={styles.card}>
-      <View style={styles.left}>
-        <Text style={styles.name}>{medication.name}</Text>
-        <Text style={styles.dosage}>{medication.dosage}</Text>
-      </View>
-
-      <View style={styles.middle}>
-        <View style={styles.metaRow}>
-          <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.metaText}>{medication.reminder_time?.slice(0, 5)}</Text>
-        </View>
-        <View style={styles.metaRow}>
-          <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.metaText}>{medication.frequency}</Text>
-        </View>
-      </View>
-
-      <View style={styles.right}>
-        <Text style={styles.addedOn}>Added on{'\n'}{addedOn}</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.name} numberOfLines={2} maxFontSizeMultiplier={MAX_FONT_MULT}>
+          {medication.name}
+        </Text>
         <TouchableOpacity
           style={styles.menuBtn}
           onPress={() => setMenuOpen(true)}
@@ -44,36 +24,38 @@ export default function MedicationCard({ medication, onEdit, onDelete }) {
           accessibilityLabel="More options"
           hitSlop={8}
         >
-          <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+          <Ionicons name="ellipsis-vertical" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <View style={styles.menu}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuOpen(false);
-                onEdit?.(medication);
-              }}
-            >
-              <Ionicons name="create-outline" size={20} color={colors.text} />
-              <Text style={styles.menuText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuOpen(false);
-                onDelete?.(medication);
-              }}
-            >
-              <Ionicons name="trash-outline" size={20} color={colors.warning} />
-              <Text style={[styles.menuText, { color: colors.warning }]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+      <View style={styles.pillRow}>
+        <Pill icon="medical-outline" text={medication.dosage} />
+        <Pill icon="time-outline" text={medication.reminder_time?.slice(0, 5)} />
+        <Pill icon="calendar-outline" text={medication.frequency} />
+      </View>
+
+      <Text style={styles.addedOn} maxFontSizeMultiplier={MAX_FONT_MULT}>
+        Added on {addedOn}
+      </Text>
+
+      <ActionSheetMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onEdit={() => onEdit?.(medication)}
+        onDelete={() => onDelete?.(medication)}
+      />
+    </View>
+  );
+}
+
+function Pill({ icon, text }) {
+  if (!text) return null;
+  return (
+    <View style={styles.pill}>
+      <Ionicons name={icon} size={15} color={colors.textSecondary} />
+      <Text style={styles.pillText} maxFontSizeMultiplier={MAX_FONT_MULT}>
+        {text}
+      </Text>
     </View>
   );
 }
@@ -88,42 +70,31 @@ function formatAddedOn(iso) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     padding: spacing.lg,
+    gap: spacing.sm,
+    ...cardShadow,
+  },
+  topRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  name: { ...typography.sectionLabel, fontSize: 18, fontWeight: '700', flex: 1 },
+  menuBtn: {
+    minWidth: MIN_TOUCH - 12,
+    minHeight: MIN_TOUCH - 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -spacing.xs,
+    marginRight: -spacing.xs,
+  },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.xs,
+    backgroundColor: colors.background,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
   },
-  left: { flex: 1.2 },
-  name: { ...typography.sectionLabel, fontSize: 17, fontWeight: '700' },
-  dosage: { ...typography.bodySecondary, marginTop: 2 },
-  middle: { flex: 1.2, gap: spacing.xs },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  metaText: { ...typography.small, fontSize: 14 },
-  right: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
-  addedOn: { ...typography.small, textAlign: 'right' },
-  menuBtn: { minWidth: 24, minHeight: MIN_TOUCH, justifyContent: 'center', alignItems: 'center' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-  menu: {
-    position: 'absolute',
-    top: '30%',
-    right: spacing.xl,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    paddingVertical: spacing.xs,
-    minWidth: 160,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 6,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    minHeight: MIN_TOUCH,
-  },
-  menuText: { ...typography.body },
+  pillText: { ...typography.small, fontSize: 14 },
+  addedOn: { ...typography.caption, textAlign: 'right' },
 });
